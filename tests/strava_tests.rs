@@ -6,6 +6,7 @@ fn creates_client() {
         strava_client_id: "id".into(),
         strava_client_secret: "secret".into(),
         strava_refresh_token: "token".into(),
+        strava_access_token: None,
         data_dir: "data".into(),
     };
     let client = StravaClient::new(cfg.clone());
