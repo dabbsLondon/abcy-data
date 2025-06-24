@@ -39,8 +39,15 @@ impl StravaApi for StravaClient {
             "https://www.strava.com/api/v3/athlete/activities?per_page={}&access_token={}",
             per_page, self.config.strava_refresh_token
         );
-        info!(per_page = per_page, "requesting latest activities");
-        let resp = self.http.get(url).send().await?;
+        info!(per_page = per_page, request = %url, "requesting latest activities");
+        let resp = self.http.get(&url).send().await?;
+        let status = resp.status();
+        info!(status = %status, "strava activities response");
+        if !status.is_success() {
+            let body = resp.text().await.unwrap_or_default();
+            debug!(body, "unsuccessful activities response");
+            anyhow::bail!("strava returned {}", status);
+        }
         let activities = resp.json::<Vec<ActivitySummary>>().await?;
         debug!(count = activities.len(), "received activities from Strava");
         Ok(activities)
@@ -51,8 +58,16 @@ impl StravaApi for StravaClient {
             "https://www.strava.com/api/v3/activities/{}/export_original?access_token={}",
             activity_id, self.config.strava_refresh_token
         );
-        info!(id = activity_id, "downloading fit file");
-        let bytes = self.http.get(url).send().await?.bytes().await?;
+        info!(id = activity_id, request = %url, "downloading fit file");
+        let resp = self.http.get(&url).send().await?;
+        let status = resp.status();
+        info!(id = activity_id, status = %status, "fit file response");
+        if !status.is_success() {
+            let body = resp.text().await.unwrap_or_default();
+            debug!(id = activity_id, body, "unsuccessful fit download");
+            anyhow::bail!("strava returned {}", status);
+        }
+        let bytes = resp.bytes().await?;
         if let Some(dir) = out_path.parent() {
             fs::create_dir_all(dir).await?;
         }

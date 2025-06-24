@@ -18,6 +18,13 @@
         "method": "GET",
         "url": "{{base_url}}/raw"
       }
+    },
+    {
+      "name": "Check Strava API",
+      "request": {
+        "method": "GET",
+        "url": "{{strava_base}}/api/v3/athlete/activities?per_page=1&access_token={{access_token}}"
+      }
     }
   ]
 }
