@@ -31,4 +31,6 @@ raw_files = requests.get(f"{base}/raw").json()
 print(activities, raw_files)
 ```
 
+The service automatically downloads the last ten Strava activities on startup and checks for new ones every five minutes.
+
 The included `abcy-data.postman_collection.json` can be imported into Postman for manual exploration of the API.
