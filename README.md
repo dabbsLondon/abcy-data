@@ -30,8 +30,25 @@ The `.env` file is only used for local development. In production you may set th
 ### Obtaining Strava Tokens
 
 1. Create an application at <https://www.strava.com/settings/api> to receive a client ID and secret.
-2. Use Strava's OAuth flow to exchange an authorization code for a long‑lived `refresh_token`.
-3. Populate the variables above with the values for your Strava account.
+2. Authorize the application for your account by visiting a URL such as:
+
+   ```text
+   https://www.strava.com/oauth/authorize?client_id=<client id>&response_type=code&redirect_uri=http://localhost/exchange_token&approval_prompt=force&scope=activity:read_all
+   ```
+
+   After approving you will be redirected with a `code` query parameter.
+3. Exchange that code for a long‑lived token via the Strava API:
+
+   ```bash
+   curl -X POST https://www.strava.com/oauth/token \
+       -d client_id=<client id> \
+       -d client_secret=<client secret> \
+       -d code=<authorization code> \
+       -d grant_type=authorization_code
+   ```
+
+   The JSON response contains `refresh_token` which should be stored in your `.env` file.
+4. Populate the variables above with the values for your Strava account.
 
 ## Running
 
