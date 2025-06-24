@@ -15,4 +15,7 @@ jobs:
           toolchain: stable
           profile: minimal
       - name: Run tests
-        run: cargo test --locked --all-targets
+        env:
+          RUSTFLAGS: "-C link-arg=-Wl,--no-keep-memory"
+          RUST_BACKTRACE: full
+        run: cargo test --locked --all-targets -- --test-threads=1

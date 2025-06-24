@@ -18,6 +18,12 @@ STRAVA_REFRESH_TOKEN=<refresh token>
 DATA_DIR=./data                # directory for downloaded and processed files
 ```
 
+`STRAVA_CLIENT_ID` and `STRAVA_CLIENT_SECRET` identify your Strava application.
+`STRAVA_REFRESH_TOKEN` is obtained from the OAuth exchange described below and
+is used to download activities on your behalf.
+`DATA_DIR` points to the folder where raw `.fit` files and resulting Parquet
+data will be stored.
+
 Create a `.env` file in the project root with these variables so they are loaded automatically. An example file is provided as `.env.example` which you can copy and modify:
 
 ```bash
@@ -85,6 +91,14 @@ Run the unit tests with:
 
 ```bash
 cargo test
+```
+
+The integration tests link several large dependencies and may fail on machines
+with limited memory. If you see the linker being killed (exit code `143`), try
+running with:
+
+```bash
+RUSTFLAGS="-C link-arg=-Wl,--no-keep-memory" cargo test -- --test-threads=1
 ```
 
 ## Docker
