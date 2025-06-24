@@ -1,13 +1,15 @@
 use crate::{storage::Storage, strava::StravaApi, fit_parser::parse_fit_file};
-use tracing::info;
+use tracing::{debug, info};
 use std::path::PathBuf;
 use tokio::time::Duration;
 
 pub async fn sync_latest<S: StravaApi + Sync>(client: &S, storage: &Storage, per_page: usize) -> anyhow::Result<()> {
     info!("checking for new activities");
     let activities = client.get_latest_activities(per_page).await?;
+    debug!(count = activities.len(), "fetched activities from Strava");
     for act in activities {
         if storage.has_activity(act.id) {
+            debug!(id = act.id, "activity already processed, skipping");
             continue;
         }
         let fit_path: PathBuf = storage.data_dir.join(format!("{}.fit", act.id));
@@ -26,11 +28,13 @@ where
     S: StravaApi + Send + Sync + Clone + 'static,
 {
     let client_clone = client.clone();
+    info!("starting periodic sync task");
     // initial sync
     let _ = sync_latest(&client_clone, &storage, 10).await;
     let mut interval = tokio::time::interval(Duration::from_secs(300));
     loop {
         interval.tick().await;
+        info!("running scheduled sync");
         let _ = sync_latest(&client, &storage, 10).await;
     }
 }

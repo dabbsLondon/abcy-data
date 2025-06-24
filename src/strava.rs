@@ -4,6 +4,7 @@ use std::path::Path;
 use tokio::fs;
 use crate::config::Config;
 use async_trait::async_trait;
+use tracing::{debug, info};
 
 #[derive(Debug, Deserialize)]
 pub struct ActivitySummary {
@@ -38,8 +39,10 @@ impl StravaApi for StravaClient {
             "https://www.strava.com/api/v3/athlete/activities?per_page={}&access_token={}",
             per_page, self.config.strava_refresh_token
         );
+        info!(per_page = per_page, "requesting latest activities");
         let resp = self.http.get(url).send().await?;
         let activities = resp.json::<Vec<ActivitySummary>>().await?;
+        debug!(count = activities.len(), "received activities from Strava");
         Ok(activities)
     }
 
@@ -48,11 +51,13 @@ impl StravaApi for StravaClient {
             "https://www.strava.com/api/v3/activities/{}/export_original?access_token={}",
             activity_id, self.config.strava_refresh_token
         );
+        info!(id = activity_id, "downloading fit file");
         let bytes = self.http.get(url).send().await?.bytes().await?;
         if let Some(dir) = out_path.parent() {
             fs::create_dir_all(dir).await?;
         }
         fs::write(out_path, &bytes).await?;
+        debug!(id = activity_id, path = %out_path.display(), "fit file saved");
         Ok(())
     }
 }
