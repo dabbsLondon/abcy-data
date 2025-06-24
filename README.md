@@ -66,21 +66,26 @@ cargo run
 
 On startup the app will:
 
-1. Query your last ten Strava activities and download any that do not already have a corresponding Parquet file.
-2. Parse each new file and write a `<activity_id>.parquet` file to `DATA_DIR`.
-3. Begin checking for new activities every five minutes in the background.
-4. Start an HTTP server on `localhost:8080`.
+1. Query your last ten Strava activities and store their metadata in `metadata.parquet`.
+2. Download each activity's original `.fit` file to `DATA_DIR/raw/` if it is not already present.
+3. Parse each new file and write a `<activity_id>.parquet` file to `DATA_DIR`.
+4. Begin checking for new activities every five minutes in the background.
+5. Start an HTTP server on `localhost:8080`.
 
 ### API Endpoints
 
 - `GET /activities` – list the IDs of stored activities.
-- `GET /raw` – list the `.fit` files in `DATA_DIR`.
+- `GET /raw` – list the `.fit` files in `DATA_DIR/raw`.
+- `GET /fit/{id}` – download the raw `.fit` file for an activity.
+- `GET /fit/{id}/details` – return parsed records from the `.fit` file.
 
 A Postman collection `abcy-data.postman_collection.json` is included to help
 test the endpoints. Set the `base_url` variable to your server's address.
 Automated tools can refer to `AGENTS.md` for a short Python example.
 
-Each activity is stored as a Parquet file inside `DATA_DIR` and can be processed further using your preferred tools.
+Each activity's time series data is stored as `<id>.parquet` inside `DATA_DIR`.
+Metadata for all rides lives in `DATA_DIR/metadata.parquet` and references the
+corresponding raw `.fit` files stored under `DATA_DIR/raw/`.
 
 ## Adding Another User
 

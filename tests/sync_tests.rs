@@ -33,7 +33,8 @@ async fn sync_downloads_missing_activity() {
     let storage = Storage::new(dir.path());
     let client = DummyClient::new();
     sync::sync_latest(&client, &storage, 10).await.unwrap();
-    assert!(dir.path().join("99.fit").exists());
+    assert!(dir.path().join("raw/99.fit").exists());
+    assert!(dir.path().join("metadata.parquet").exists());
     assert_eq!(*client.downloads.lock().unwrap(), 1);
 }
 
@@ -41,6 +42,7 @@ async fn sync_downloads_missing_activity() {
 async fn sync_skips_existing_activity() {
     let dir = tempdir().unwrap();
     let storage = Storage::new(dir.path());
+    std::fs::create_dir_all(dir.path().join("raw")).unwrap();
     std::fs::write(dir.path().join("99.parquet"), b"x").unwrap();
     let client = DummyClient::new();
     sync::sync_latest(&client, &storage, 10).await.unwrap();

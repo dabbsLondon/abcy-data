@@ -15,7 +15,9 @@ The server listens on `localhost:8080` by default.
 ## HTTP endpoints
 
 - `GET /activities` – returns a JSON array of activity IDs that have been processed.
-- `GET /raw` – returns a JSON array of `.fit` file names in `DATA_DIR`.
+- `GET /raw` – returns a JSON array of `.fit` file names in `DATA_DIR/raw`.
+- `GET /fit/{id}` – download the raw `.fit` file for an activity.
+- `GET /fit/{id}/details` – JSON data parsed from the `.fit` file.
 
 ## Python usage
 
@@ -28,7 +30,8 @@ base = "http://localhost:8080"
 
 activities = requests.get(f"{base}/activities").json()
 raw_files = requests.get(f"{base}/raw").json()
-print(activities, raw_files)
+first = requests.get(f"{base}/fit/{activities[0]['id']}") if activities else None
+print(activities, raw_files, first is not None)
 ```
 
 The service automatically downloads the last ten Strava activities on startup and checks for new ones every five minutes.

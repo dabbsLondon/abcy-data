@@ -1,7 +1,7 @@
 use actix_web::{get, post, web, App, HttpServer, Responder, HttpResponse};
 use serde::{Serialize, Deserialize};
 use crate::storage::Storage;
-use crate::{strava::StravaClient, sync};
+use crate::{strava::StravaClient, sync, fit_parser::parse_fit_file};
 use std::fs;
 use std::ffi::OsStr;
 use std::collections::HashMap;
@@ -34,7 +34,8 @@ async fn list_activities(storage: web::Data<Storage>) -> impl Responder {
 #[get("/raw")]
 async fn list_raw_files(storage: web::Data<Storage>) -> impl Responder {
     let mut files = Vec::new();
-    if let Ok(entries) = fs::read_dir(&storage.data_dir) {
+    let raw_dir = storage.data_dir.join("raw");
+    if let Ok(entries) = fs::read_dir(&raw_dir) {
         for entry in entries.flatten() {
             if entry.path().extension() == Some(OsStr::new("fit")) {
                 if let Some(name) = entry.path().file_name() {
@@ -79,6 +80,24 @@ async fn webhook_event(
     HttpResponse::Ok()
 }
 
+#[get("/fit/{id}")]
+async fn download_fit(path: web::Path<u64>, storage: web::Data<Storage>) -> impl Responder {
+    let fit_path = storage.fit_file_path(*path);
+    match fs::read(&fit_path) {
+        Ok(data) => HttpResponse::Ok().body(data),
+        Err(_) => HttpResponse::NotFound().finish(),
+    }
+}
+
+#[get("/fit/{id}/details")]
+async fn fit_details(path: web::Path<u64>, storage: web::Data<Storage>) -> impl Responder {
+    let fit_path = storage.fit_file_path(*path);
+    match parse_fit_file(&fit_path) {
+        Ok(points) => HttpResponse::Ok().json(points),
+        Err(_) => HttpResponse::NotFound().finish(),
+    }
+}
+
 pub async fn run_server(storage: Storage, client: StravaClient) -> std::io::Result<()> {
     HttpServer::new(move || {
         App::new()
@@ -86,6 +105,8 @@ pub async fn run_server(storage: Storage, client: StravaClient) -> std::io::Resu
             .app_data(web::Data::new(client.clone()))
             .service(list_activities)
             .service(list_raw_files)
+            .service(download_fit)
+            .service(fit_details)
             .service(webhook_verify)
             .service(webhook_event)
     })
