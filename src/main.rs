@@ -14,6 +14,6 @@ async fn main() -> anyhow::Result<()> {
 
     // start API
     info!("starting HTTP server");
-    api::run_server(storage).await?;
+    api::run_server(storage, client).await?;
     Ok(())
 }
