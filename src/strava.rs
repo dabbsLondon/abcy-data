@@ -24,6 +24,36 @@ impl StravaClient {
     pub fn new(config: Config) -> Self {
         Self { http: Client::new(), config }
     }
+
+    async fn access_token(&self) -> anyhow::Result<String> {
+        #[derive(Deserialize)]
+        struct TokenResp {
+            access_token: String,
+        }
+
+        let resp = self
+            .http
+            .post("https://www.strava.com/oauth/token")
+            .form(&[
+                ("client_id", self.config.strava_client_id.as_str()),
+                ("client_secret", self.config.strava_client_secret.as_str()),
+                ("refresh_token", self.config.strava_refresh_token.as_str()),
+                ("grant_type", "refresh_token"),
+            ])
+            .send()
+            .await?;
+
+        let status = resp.status();
+        info!(status = %status, "token refresh response");
+        if !status.is_success() {
+            let body = resp.text().await.unwrap_or_default();
+            debug!(body, "unsuccessful token refresh");
+            anyhow::bail!("strava token refresh returned {}", status);
+        }
+
+        let token = resp.json::<TokenResp>().await?.access_token;
+        Ok(token)
+    }
 }
 
 #[async_trait]
@@ -36,11 +66,17 @@ pub trait StravaApi {
 impl StravaApi for StravaClient {
     async fn get_latest_activities(&self, per_page: usize) -> anyhow::Result<Vec<ActivitySummary>> {
         let url = format!(
-            "https://www.strava.com/api/v3/athlete/activities?per_page={}&access_token={}",
-            per_page, self.config.strava_refresh_token
+            "https://www.strava.com/api/v3/athlete/activities?per_page={}",
+            per_page
         );
+        let token = self.access_token().await?;
         info!(per_page = per_page, request = %url, "requesting latest activities");
-        let resp = self.http.get(&url).send().await?;
+        let resp = self
+            .http
+            .get(&url)
+            .bearer_auth(token)
+            .send()
+            .await?;
         let status = resp.status();
         info!(status = %status, "strava activities response");
         if !status.is_success() {
@@ -55,11 +91,17 @@ impl StravaApi for StravaClient {
 
     async fn download_fit(&self, activity_id: u64, out_path: &Path) -> anyhow::Result<()> {
         let url = format!(
-            "https://www.strava.com/api/v3/activities/{}/export_original?access_token={}",
-            activity_id, self.config.strava_refresh_token
+            "https://www.strava.com/api/v3/activities/{}/export_original",
+            activity_id
         );
+        let token = self.access_token().await?;
         info!(id = activity_id, request = %url, "downloading fit file");
-        let resp = self.http.get(&url).send().await?;
+        let resp = self
+            .http
+            .get(&url)
+            .bearer_auth(token)
+            .send()
+            .await?;
         let status = resp.status();
         info!(id = activity_id, status = %status, "fit file response");
         if !status.is_success() {
