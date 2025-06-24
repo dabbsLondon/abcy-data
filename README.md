@@ -18,7 +18,14 @@ STRAVA_REFRESH_TOKEN=<refresh token>
 DATA_DIR=./data                # directory for downloaded and processed files
 ```
 
-You can create a `.env` file in the project directory with these values so they are loaded automatically.
+Create a `.env` file in the project root with these variables so they are loaded automatically. An example file is provided as `.env.example` which you can copy and modify:
+
+```bash
+cp .env.example .env
+# edit the file and add your values
+```
+
+The `.env` file is only used for local development. In production you may set the environment variables directly.
 
 ### Obtaining Strava Tokens
 
@@ -54,4 +61,26 @@ STRAVA_REFRESH_TOKEN=... DATA_DIR=./alice_data cargo run
 ```
 
 Repeat for each user you want to track. A more advanced multi-user workflow would require extending the configuration and storage layout.
+
+## Tests
+
+Run the unit tests with:
+
+```bash
+cargo test
+```
+
+## Docker
+
+The project includes a `Dockerfile` that builds a small container with the compiled binary. Build it locally with:
+
+```bash
+docker build -t abcy-data .
+```
+
+The container expects the environment variables described above at runtime.
+
+### Continuous Integration
+
+GitHub Actions run `cargo test` for each pull request and build the Docker image on every push to `main`.
 
