@@ -71,6 +71,11 @@ On startup the app will:
 ### API Endpoints
 
 - `GET /activities` – list the IDs of stored activities.
+- `GET /raw` – list the `.fit` files in `DATA_DIR`.
+
+A Postman collection `abcy-data.postman_collection.json` is included to help
+test the endpoints. Set the `base_url` variable to your server's address.
+Automated tools can refer to `AGENTS.md` for a short Python example.
 
 Each activity is stored as a Parquet file inside `DATA_DIR` and can be processed further using your preferred tools.
 
