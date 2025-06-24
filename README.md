@@ -15,14 +15,16 @@ The application reads its settings from environment variables (or a `.env` file)
 STRAVA_CLIENT_ID=<client id>
 STRAVA_CLIENT_SECRET=<client secret>
 STRAVA_REFRESH_TOKEN=<refresh token>
+STRAVA_ACCESS_TOKEN=<access token>
 DATA_DIR=./data                # directory for downloaded and processed files
 ```
 
 `STRAVA_CLIENT_ID` and `STRAVA_CLIENT_SECRET` identify your Strava application.
 `STRAVA_REFRESH_TOKEN` is obtained from the OAuth exchange described below and
-is used to download activities on your behalf.
-`DATA_DIR` points to the folder where raw `.fit` files and resulting Parquet
-data will be stored.
+is used to download activities on your behalf. If `STRAVA_ACCESS_TOKEN` is
+provided, it will be used directly for API requests instead of refreshing the
+token. `DATA_DIR` points to the folder where raw `.fit` files and resulting
+Parquet data will be stored.
 
 Create a `.env` file in the project root with these variables so they are loaded automatically. An example file is provided as `.env.example` which you can copy and modify:
 

@@ -26,6 +26,11 @@ impl StravaClient {
     }
 
     async fn access_token(&self) -> anyhow::Result<String> {
+        if let Some(ref token) = self.config.strava_access_token {
+            info!("using provided Strava access token");
+            return Ok(token.clone());
+        }
+
         #[derive(Deserialize)]
         struct TokenResp {
             access_token: String,

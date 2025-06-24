@@ -7,6 +7,7 @@ pub async fn sync_latest<S: StravaApi + Sync>(client: &S, storage: &Storage, per
     info!("checking for new activities");
     let activities = client.get_latest_activities(per_page).await?;
     debug!(count = activities.len(), "fetched activities from Strava");
+    info!(count = activities.len(), "downloading fit files for activities");
     for act in activities {
         if storage.has_activity(act.id) {
             debug!(id = act.id, "activity already processed, skipping");
