@@ -18,13 +18,37 @@ STRAVA_REFRESH_TOKEN=<refresh token>
 DATA_DIR=./data                # directory for downloaded and processed files
 ```
 
-You can create a `.env` file in the project directory with these values so they are loaded automatically.
+Create a `.env` file in the project root with these variables so they are loaded automatically. An example file is provided as `.env.example` which you can copy and modify:
+
+```bash
+cp .env.example .env
+# edit the file and add your values
+```
+
+The `.env` file is only used for local development. In production you may set the environment variables directly.
 
 ### Obtaining Strava Tokens
 
 1. Create an application at <https://www.strava.com/settings/api> to receive a client ID and secret.
-2. Use Strava's OAuth flow to exchange an authorization code for a long‑lived `refresh_token`.
-3. Populate the variables above with the values for your Strava account.
+2. Authorize the application for your account by visiting a URL such as:
+
+   ```text
+   https://www.strava.com/oauth/authorize?client_id=<client id>&response_type=code&redirect_uri=http://localhost/exchange_token&approval_prompt=force&scope=activity:read_all
+   ```
+
+   After approving you will be redirected with a `code` query parameter.
+3. Exchange that code for a long‑lived token via the Strava API:
+
+   ```bash
+   curl -X POST https://www.strava.com/oauth/token \
+       -d client_id=<client id> \
+       -d client_secret=<client secret> \
+       -d code=<authorization code> \
+       -d grant_type=authorization_code
+   ```
+
+   The JSON response contains `refresh_token` which should be stored in your `.env` file.
+4. Populate the variables above with the values for your Strava account.
 
 ## Running
 
@@ -54,4 +78,26 @@ STRAVA_REFRESH_TOKEN=... DATA_DIR=./alice_data cargo run
 ```
 
 Repeat for each user you want to track. A more advanced multi-user workflow would require extending the configuration and storage layout.
+
+## Tests
+
+Run the unit tests with:
+
+```bash
+cargo test
+```
+
+## Docker
+
+The project includes a `Dockerfile` that builds a small container with the compiled binary. Build it locally with:
+
+```bash
+docker build -t abcy-data .
+```
+
+The container expects the environment variables described above at runtime.
+
+### Continuous Integration
+
+GitHub Actions run `cargo test` for each pull request and build the Docker image on every push to `main`.
 
