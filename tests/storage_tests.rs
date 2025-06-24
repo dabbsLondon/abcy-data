@@ -11,4 +11,5 @@ fn save_activity_creates_parquet() {
     storage.save_activity(42, &points).unwrap();
     let file = dir.path().join("42.parquet");
     assert!(file.exists());
+    assert!(storage.has_activity(42));
 }

@@ -9,6 +9,7 @@ dependencies = [
  "actix-rt",
  "actix-web",
  "anyhow",
+ "async-trait",
  "dotenvy",
  "fitparser",
  "mockito",

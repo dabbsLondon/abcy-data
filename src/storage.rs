@@ -13,6 +13,10 @@ impl Storage {
         Self { data_dir: dir.into() }
     }
 
+    pub fn has_activity(&self, activity_id: u64) -> bool {
+        self.data_dir.join(format!("{}.parquet", activity_id)).exists()
+    }
+
     pub fn save_activity(&self, activity_id: u64, points: &[DataPoint]) -> PolarsResult<()> {
         let timestamp: Vec<Option<i64>> = points.iter().map(|p| p.timestamp).collect();
         let power: Vec<Option<i64>> = points.iter().map(|p| p.power).collect();

@@ -64,9 +64,10 @@ cargo run
 
 On startup the app will:
 
-1. Query your Strava activities and download the latest one as a `.fit` file.
-2. Parse the file and write a `<activity_id>.parquet` file to `DATA_DIR`.
-3. Start an HTTP server on `localhost:8080`.
+1. Query your last ten Strava activities and download any that do not already have a corresponding Parquet file.
+2. Parse each new file and write a `<activity_id>.parquet` file to `DATA_DIR`.
+3. Begin checking for new activities every five minutes in the background.
+4. Start an HTTP server on `localhost:8080`.
 
 ### API Endpoints
 

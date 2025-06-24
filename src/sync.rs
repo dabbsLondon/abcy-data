@@ -1,0 +1,36 @@
+use crate::{storage::Storage, strava::StravaApi, fit_parser::parse_fit_file};
+use tracing::info;
+use std::path::PathBuf;
+use tokio::time::Duration;
+
+pub async fn sync_latest<S: StravaApi + Sync>(client: &S, storage: &Storage, per_page: usize) -> anyhow::Result<()> {
+    info!("checking for new activities");
+    let activities = client.get_latest_activities(per_page).await?;
+    for act in activities {
+        if storage.has_activity(act.id) {
+            continue;
+        }
+        let fit_path: PathBuf = storage.data_dir.join(format!("{}.fit", act.id));
+        if client.download_fit(act.id, &fit_path).await.is_ok() {
+            if let Ok(points) = parse_fit_file(&fit_path) {
+                storage.save_activity(act.id, &points)?;
+            }
+            info!(id = act.id, "downloaded new activity");
+        }
+    }
+    Ok(())
+}
+
+pub async fn run_periodic_sync<S>(client: S, storage: Storage)
+where
+    S: StravaApi + Send + Sync + Clone + 'static,
+{
+    let client_clone = client.clone();
+    // initial sync
+    let _ = sync_latest(&client_clone, &storage, 10).await;
+    let mut interval = tokio::time::interval(Duration::from_secs(300));
+    loop {
+        interval.tick().await;
+        let _ = sync_latest(&client, &storage, 10).await;
+    }
+}
