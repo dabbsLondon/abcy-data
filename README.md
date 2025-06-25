@@ -38,7 +38,17 @@ token using the stored `refresh_token` and writes the new credentials to
    ```
 
    After approving you will be redirected with a `code` query parameter.
-3. Exchange that code for a long‑lived token via the Strava API:
+3. Instead of manually exchanging the code you can run the included
+   `authorize` binary which performs the full OAuth flow automatically:
+
+   ```bash
+   cargo run --bin authorize
+   ```
+
+   This opens a browser window, waits for the redirect and saves the returned
+   credentials to `strava_tokens.json`.
+
+4. If you prefer the manual approach, exchange the code via curl:
 
    ```bash
    curl -X POST https://www.strava.com/oauth/token \
@@ -48,8 +58,8 @@ token using the stored `refresh_token` and writes the new credentials to
        -d grant_type=authorization_code
    ```
 
-   The JSON response contains `refresh_token` which should be stored in your `.env` file.
-4. Populate the variables above with the values for your Strava account.
+   The JSON response contains `refresh_token` which should be stored in your
+   configuration file.
 
 ## Running
 
