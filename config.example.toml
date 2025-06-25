@@ -1,8 +1,9 @@
 [strava]
 client_id = "12345"
 client_secret = "secret"
-refresh_token = "<refresh token>"
-token_path = "./token.json"      # cached access token
+# optional refresh token obtained via authorization
+refresh_token = ""
+token_path = "./token.json"      # cached access token and expiry
 
 [storage]
 data_dir = "./data"
