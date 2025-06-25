@@ -25,7 +25,12 @@ async fn main() -> anyhow::Result<()> {
     webbrowser::open(&url).context("failed to open browser")?;
     info!("Opened browser to URL");
 
-    let server = tiny_http::Server::http("0.0.0.0:8080").unwrap();
+    let server = tiny_http::Server::http("0.0.0.0:8080").map_err(|e| {
+        anyhow::anyhow!(
+            "failed to bind to localhost:8080 (is it already running?): {}",
+            e
+        )
+    })?;
     let request = server.recv().context("failed to receive request")?;
     let full_url = format!("http://localhost:8080{}", request.url());
     let parsed = Url::parse(&full_url)?;
@@ -36,7 +41,12 @@ async fn main() -> anyhow::Result<()> {
         .context("missing code in redirect")?;
     info!("Received redirect with code");
 
-    let response = tiny_http::Response::from_string("Authorization complete. You may close this tab.");
+    let mut response = tiny_http::Response::from_string(
+        "<html><body><h2>Authorization complete. You may close this window.</h2></body></html>",
+    );
+    response.add_header(
+        tiny_http::Header::from_bytes("Content-Type", "text/html").unwrap(),
+    );
     let _ = request.respond(response);
 
     let client = Client::new();
@@ -56,11 +66,14 @@ async fn main() -> anyhow::Result<()> {
         error!(%status, "token request failed");
         anyhow::bail!("token exchange failed");
     }
-    let token: Token = resp.json().await.context("failed to parse token JSON")?;
+    let body = resp.text().await.context("failed to read token response")?;
+    let token: Token = serde_json::from_str(&body).context("failed to parse token JSON")?;
     info!("Token exchange successful");
+    info!("Access token: {}", token.access_token);
+    info!("Refresh token: {}", token.refresh_token);
+    info!("Expires at (unix): {}", token.expires_at);
 
-    let json = serde_json::to_string_pretty(&token)?;
-    tokio::fs::write("strava_tokens.json", json).await?;
+    tokio::fs::write("strava_tokens.json", body).await?;
     info!("Token saved to strava_tokens.json");
 
     Ok(())
