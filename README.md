@@ -15,8 +15,9 @@ Configuration is read from `config.toml` instead of environment variables. A min
 [strava]
 client_id = "12345"
 client_secret = "secret"
-refresh_token = "<refresh token>"
-token_path = "./token.json"      # cached access token
+# optional refresh token obtained during authorization
+refresh_token = ""
+token_path = "./token.json"      # cached access token and expiry
 
 [storage]
 data_dir = "./data"
@@ -24,9 +25,12 @@ download_count = 10
 user = "athlete1"
 ```
 
-When the Strava API returns a `401` the application automatically refreshes the
-token using the stored `refresh_token` and writes the new credentials to
-`token_path`.
+If the cached token has expired or the Strava API returns a `401`, the
+application automatically refreshes it using the stored `refresh_token`.
+The new access token, refresh token and expiry time are written to `token_path`
+and the expiry is logged. If no refresh token is provided the server will open
+a browser on startup to complete the OAuth flow and store the returned
+credentials.
 
 ### Obtaining Strava Tokens
 
@@ -58,14 +62,18 @@ token using the stored `refresh_token` and writes the new credentials to
        -d grant_type=authorization_code
    ```
 
-   The JSON response contains `refresh_token` which should be stored in your
-   configuration file.
+  The JSON response contains `refresh_token` which can be stored in your
+  configuration file. This step is optional because running the server with an
+  empty `refresh_token` will trigger the interactive authorization flow.
 
 ## Running
 
 ```bash
 cargo run
 ```
+
+The `default-run` target is configured, so this command starts the main
+`abcy-data` server without needing `--bin`.
 
 On startup the app will:
 
