@@ -1,6 +1,6 @@
 # abcy-data
 
-This project synchronizes cycling activities from Strava, parses `.FIT` files, stores the results in Parquet and exposes a small HTTP API. It is intended as a foundation for further analysis services.
+This project synchronizes cycling activities from Strava and exposes a simple HTTP API.  Activity metadata and data streams are stored as compressed JSON files for further analysis.
 
 ## Requirements
 
@@ -9,31 +9,24 @@ This project synchronizes cycling activities from Strava, parses `.FIT` files, s
 
 ## Configuration
 
-The application reads its settings from environment variables (or a `.env` file). The following variables are required:
+Configuration is read from `config.toml` instead of environment variables. A minimal example:
 
-```
-STRAVA_CLIENT_ID=<client id>
-STRAVA_CLIENT_SECRET=<client secret>
-STRAVA_REFRESH_TOKEN=<refresh token>
-STRAVA_ACCESS_TOKEN=<access token>
-DATA_DIR=./data                # directory for downloaded and processed files
-```
+```toml
+[strava]
+client_id = "12345"
+client_secret = "secret"
+refresh_token = "<refresh token>"
+token_path = "./token.json"      # cached access token
 
-`STRAVA_CLIENT_ID` and `STRAVA_CLIENT_SECRET` identify your Strava application.
-`STRAVA_REFRESH_TOKEN` is obtained from the OAuth exchange described below and
-is used to download activities on your behalf. If `STRAVA_ACCESS_TOKEN` is
-provided, it will be used directly for API requests instead of refreshing the
-token. `DATA_DIR` points to the folder where raw `.fit` files and resulting
-Parquet data will be stored.
-
-Create a `.env` file in the project root with these variables so they are loaded automatically. An example file is provided as `.env.example` which you can copy and modify:
-
-```bash
-cp .env.example .env
-# edit the file and add your values
+[storage]
+data_dir = "./data"
+download_count = 10
+user = "athlete1"
 ```
 
-The `.env` file is only used for local development. In production you may set the environment variables directly.
+When the Strava API returns a `401` the application automatically refreshes the
+token using the stored `refresh_token` and writes the new credentials to
+`token_path`.
 
 ### Obtaining Strava Tokens
 
@@ -66,37 +59,40 @@ cargo run
 
 On startup the app will:
 
-1. Query your last ten Strava activities and store their metadata in `metadata.parquet`.
-2. Download each activity's original `.fit` file to `DATA_DIR/raw/` if it is not already present.
-3. Parse each new file and write a `<activity_id>.parquet` file to `DATA_DIR`.
-4. Begin checking for new activities every five minutes in the background.
-5. Start an HTTP server on `localhost:8080`.
+1. Query your most recent activities (count configured by `download_count`).
+2. Fetch metadata and data streams for each new activity and store them under
+   `DATA_DIR/<user>/<year>/<id>/` as `meta.json.zst` and `streams.json.zst`.
+3. Start an HTTP server on `localhost:8080`.
 
 ### API Endpoints
 
-- `GET /activities` – list the IDs of stored activities.
-- `GET /raw` – list the `.fit` files in `DATA_DIR/raw`.
-- `GET /fit/{id}` – download the raw `.fit` file for an activity.
-- `GET /fit/{id}/details` – return parsed records from the `.fit` file.
+- `GET /activities` – ID, name, date and distance of all downloaded activities.
+- `GET /activity/{id}` – full metadata and streams for an activity.
+- `GET /files` – recursive listing of everything under `DATA_DIR`.
+- `POST /webhook` – Strava webhook endpoint used to fetch new data immediately.
 
 A Postman collection `abcy-data.postman_collection.json` is included to help
 test the endpoints. Set the `base_url` variable to your server's address.
 Automated tools can refer to `AGENTS.md` for a short Python example.
 
-Each activity's time series data is stored as `<id>.parquet` inside `DATA_DIR`.
-Metadata for all rides lives in `DATA_DIR/metadata.parquet` and references the
-corresponding raw `.fit` files stored under `DATA_DIR/raw/`.
+Downloaded activities are organised as:
+
+```
+DATA_DIR/
+  <user>/
+    <year>/
+      <id>/
+        meta.json.zst
+        streams.json.zst
+```
+
+Metadata and streams are encoded with `serde_json` and compressed using zstd.
 
 ## Adding Another User
 
-The current implementation expects one set of Strava credentials. To ingest data for another athlete you can run a second instance with a different `.env` file:
-
-```bash
-STRAVA_CLIENT_ID=... STRAVA_CLIENT_SECRET=... \
-STRAVA_REFRESH_TOKEN=... DATA_DIR=./alice_data cargo run
-```
-
-Repeat for each user you want to track. A more advanced multi-user workflow would require extending the configuration and storage layout.
+The storage layout includes a `<user>` directory.  Specify the user name in your
+`config.toml` and run a separate instance per athlete.  Each instance will store
+its data under `DATA_DIR/<user>/`.
 
 ## Tests
 

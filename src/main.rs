@@ -1,19 +1,15 @@
-use abcy_data::{config::Config, strava::StravaClient, storage::Storage, api, sync};
+use abcy_data::{utils::Config, auth::Auth, storage::Storage, fetch, web};
 use tracing::info;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     tracing_subscriber::fmt::init();
-    let config = Config::from_env();
-    let client = StravaClient::new(config.clone());
-    let storage = Storage::new(&config.data_dir);
-
-    // spawn background sync
-    info!("spawning background sync task");
-    tokio::spawn(sync::run_periodic_sync(client.clone(), storage.clone()));
-
-    // start API
-    info!("starting HTTP server");
-    api::run_server(storage, client).await?;
+    let cfg = Config::load("config.toml")?;
+    let auth = Auth::new(cfg.clone());
+    let storage = Storage::new(&cfg.storage);
+    // initial download
+    info!("downloading latest activities");
+    let _ = fetch::download_latest(&auth, &storage, cfg.storage.download_count).await;
+    web::run(cfg, auth, storage).await?;
     Ok(())
 }
