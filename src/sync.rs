@@ -10,16 +10,25 @@ pub async fn sync_latest<S: StravaApi + Sync>(client: &S, storage: &Storage, per
     info!(count = activities.len(), "downloading fit files for activities");
     for act in activities {
         if storage.has_activity(act.id) {
-            debug!(id = act.id, "activity already processed, skipping");
+            debug!(id = act.id, "activity parquet exists, skipping");
             continue;
         }
-        let fit_path: PathBuf = storage.data_dir.join(format!("{}.fit", act.id));
-        if client.download_fit(act.id, &fit_path).await.is_ok() {
-            if let Ok(points) = parse_fit_file(&fit_path) {
-                storage.save_activity(act.id, &points)?;
+
+        storage.save_metadata(&act)?;
+        let fit_path: PathBuf = storage.fit_file_path(act.id);
+
+        if !storage.has_fit_file(act.id) {
+            if client.download_fit(act.id, &fit_path).await.is_ok() {
+                info!(id = act.id, "downloaded new fit file");
             }
-            info!(id = act.id, "downloaded new activity");
+        } else {
+            debug!(id = act.id, "fit file already exists, skipping download");
         }
+
+        if let Ok(points) = parse_fit_file(&fit_path) {
+            storage.save_activity(act.id, &points)?;
+        }
+        info!(id = act.id, "processed activity");
     }
     Ok(())
 }
