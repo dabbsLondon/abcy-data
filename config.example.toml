@@ -1,0 +1,10 @@
+[strava]
+client_id = "12345"
+client_secret = "secret"
+refresh_token = "<refresh token>"
+token_path = "./token.json"      # cached access token
+
+[storage]
+data_dir = "./data"
+download_count = 10
+user = "athlete1"
