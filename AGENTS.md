@@ -14,10 +14,10 @@ The server listens on `localhost:8080` by default.
 
 ## HTTP endpoints
 
-- `GET /activities` – returns a JSON array of activity IDs that have been processed.
-- `GET /raw` – returns a JSON array of `.fit` file names in `DATA_DIR/raw`.
-- `GET /fit/{id}` – download the raw `.fit` file for an activity.
-- `GET /fit/{id}/details` – JSON data parsed from the `.fit` file.
+- `GET /activities` – list downloaded activities (id, name, date, distance)
+- `GET /activity/{id}` – full metadata and streams for an activity
+- `GET /files` – recursive listing of stored files
+- `POST /webhook` – Strava webhook used to trigger immediate downloads
 
 ## Python usage
 
@@ -29,11 +29,26 @@ import requests
 base = "http://localhost:8080"
 
 activities = requests.get(f"{base}/activities").json()
-raw_files = requests.get(f"{base}/raw").json()
-first = requests.get(f"{base}/fit/{activities[0]['id']}") if activities else None
-print(activities, raw_files, first is not None)
+if activities:
+    first = requests.get(f"{base}/activity/{activities[0]['id']}").json()
+else:
+    first = None
+print(activities, first is not None)
 ```
 
-The service automatically downloads the last ten Strava activities on startup and checks for new ones every five minutes.
+The service downloads the most recent Strava activities on startup. Use the `/webhook` endpoint to fetch new data as Strava notifies the server.
 
 The included `abcy-data.postman_collection.json` can be imported into Postman for manual exploration of the API.
+
+## Modules
+
+- **auth** – handles Strava OAuth and token refresh logic
+- **fetch** – downloads activity metadata and streams
+- **storage** – writes and reads compressed JSON files on disk
+- **web** – exposes the HTTP API routes
+- **schema** – shared structs for metadata and stream payloads
+- **utils** – helpers and application configuration
+
+Downloaded activities are stored under `DATA_DIR/<user>/<year>/<id>` where
+`<user>` is configured in `config.toml`. Each directory contains
+`meta.json.zst` and `streams.json.zst`.

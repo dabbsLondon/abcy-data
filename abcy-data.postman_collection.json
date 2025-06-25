@@ -7,45 +7,22 @@
   "item": [
     {
       "name": "List Activities",
-      "request": {
-        "method": "GET",
-        "url": "{{base_url}}/activities"
-      }
+      "request": { "method": "GET", "url": "{{base_url}}/activities" }
     },
     {
-      "name": "List Raw Files",
-      "request": {
-        "method": "GET",
-        "url": "{{base_url}}/raw"
-      }
+      "name": "Activity Details",
+      "request": { "method": "GET", "url": "{{base_url}}/activity/{{id}}" }
     },
     {
-      "name": "Refresh Access Token",
+      "name": "List Files",
+      "request": { "method": "GET", "url": "{{base_url}}/files" }
+    },
+    {
+      "name": "Send Webhook Event",
       "request": {
         "method": "POST",
-        "header": [
-          { "key": "Content-Type", "value": "application/x-www-form-urlencoded" }
-        ],
-        "body": {
-          "mode": "urlencoded",
-          "urlencoded": [
-            { "key": "client_id", "value": "{{client_id}}", "type": "text" },
-            { "key": "client_secret", "value": "{{client_secret}}", "type": "text" },
-            { "key": "refresh_token", "value": "{{refresh_token}}", "type": "text" },
-            { "key": "grant_type", "value": "refresh_token", "type": "text" }
-          ]
-        },
-        "url": "{{strava_base}}/oauth/token"
-      }
-    },
-    {
-      "name": "Check Strava API",
-      "request": {
-        "method": "GET",
-        "header": [
-          { "key": "Authorization", "value": "Bearer {{access_token}}", "type": "text" }
-        ],
-        "url": "{{strava_base}}/api/v3/athlete/activities?per_page=1"
+        "header": [ { "key": "Content-Type", "value": "application/json" } ],
+        "body": { "mode": "raw", "raw": "{\n  \"object_type\": \"activity\", \n  \"aspect_type\": \"create\"\n}" }
       }
     }
   ]
