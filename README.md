@@ -9,7 +9,7 @@ This project synchronizes cycling activities from Strava and exposes a simple HT
 
 ## Configuration
 
-Configuration is read from `config.toml` instead of environment variables. A minimal example:
+Configuration is read from `config.toml` instead of environment variables. A minimal example is provided in `config.example.toml`. Copy this file to `config.toml` and fill in your credentials:
 
 ```toml
 [strava]

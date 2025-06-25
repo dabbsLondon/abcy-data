@@ -1,5 +1,6 @@
 use serde::Deserialize;
 use std::fs;
+use anyhow::Context;
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct Strava {
@@ -30,8 +31,11 @@ fn default_base_url() -> String {
 
 impl Config {
     pub fn load(path: &str) -> anyhow::Result<Self> {
-        let text = fs::read_to_string(path)?;
-        let cfg: Self = toml::from_str(&text)?;
+        tracing::info!("loading configuration from {}", path);
+        let text = fs::read_to_string(path)
+            .with_context(|| format!("config file '{}' not found", path))?;
+        let cfg: Self = toml::from_str(&text)
+            .context("failed to parse TOML in config file")?;
         Ok(cfg)
     }
 }
