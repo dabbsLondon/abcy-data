@@ -7,7 +7,7 @@
   "item": [
     {
       "name": "List Activities",
-      "request": { "method": "GET", "url": "{{base_url}}/activities" }
+      "request": { "method": "GET", "url": "{{base_url}}/activities?count=5" }
     },
     {
       "name": "Activity Details",
@@ -16,6 +16,10 @@
     {
       "name": "List Files",
       "request": { "method": "GET", "url": "{{base_url}}/files" }
+    },
+    {
+      "name": "Get Raw File",
+      "request": { "method": "GET", "url": "{{base_url}}/raw/{{path}}" }
     },
     {
       "name": "Send Webhook Event",

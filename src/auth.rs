@@ -39,51 +39,15 @@ impl Auth {
             if tok.expires_at > chrono::Utc::now().timestamp() {
                 return Ok(tok.access_token.clone());
             }
-            return Ok(self.refresh_token_with(&tok.refresh_token).await?.access_token);
         }
         if let Some(tok) = self.load_token().await {
             if tok.expires_at > chrono::Utc::now().timestamp() {
                 *self.token.lock().await = Some(tok.clone());
                 return Ok(tok.access_token);
             }
-            return Ok(self.refresh_token_with(&tok.refresh_token).await?.access_token);
-        }
-        if let Some(ref rt) = self.cfg.strava.refresh_token {
-            return Ok(self.refresh_token_with(rt).await?.access_token);
         }
         let tok = self.authorize().await?;
         Ok(tok.access_token)
-    }
-
-    async fn refresh_token_with(&self, refresh_token: &str) -> anyhow::Result<Token> {
-        #[derive(Deserialize)]
-        struct Resp { access_token: String, refresh_token: String, expires_at: i64 }
-        let resp = self
-            .client
-            .post(format!("{}/oauth/token", self.cfg.base_url.trim_end_matches("/api/v3")))
-            .form(&[
-                ("client_id", self.cfg.strava.client_id.as_str()),
-                ("client_secret", self.cfg.strava.client_secret.as_str()),
-                ("grant_type", "refresh_token"),
-                ("refresh_token", refresh_token),
-            ])
-            .send()
-            .await?;
-        let status = resp.status();
-        if !status.is_success() {
-            warn!(%status, "token refresh failed");
-            anyhow::bail!("refresh failed")
-        }
-        let resp = resp.json::<Resp>().await?;
-        info!(expires_at = resp.expires_at, "refreshed strava token");
-        let token = Token {
-            access_token: resp.access_token,
-            refresh_token: resp.refresh_token,
-            expires_at: resp.expires_at,
-        };
-        *self.token.lock().await = Some(token.clone());
-        self.save_token(&token).await?;
-        Ok(token)
     }
 
     async fn authorize(&self) -> anyhow::Result<Token> {
@@ -114,7 +78,7 @@ impl Auth {
         let _ = request.respond(response);
 
         #[derive(Deserialize)]
-        struct Resp { access_token: String, refresh_token: String, expires_at: i64 }
+        struct Resp { access_token: String, expires_at: i64 }
         let resp = self
             .client
             .post("https://www.strava.com/api/v3/oauth/token")
@@ -134,11 +98,9 @@ impl Auth {
         let tok = resp.json::<Resp>().await?;
         info!("Token exchange successful");
         info!("Access token: {}", tok.access_token);
-        info!("Refresh token: {}", tok.refresh_token);
         info!("Expires at (unix): {}", tok.expires_at);
         let token = Token {
             access_token: tok.access_token,
-            refresh_token: tok.refresh_token,
             expires_at: tok.expires_at,
         };
         *self.token.lock().await = Some(token.clone());
@@ -152,14 +114,8 @@ impl Auth {
         let req = self.client.request(method.clone(), url).bearer_auth(&token);
         let mut resp = req.try_clone().unwrap().send().await?;
         if resp.status() == reqwest::StatusCode::UNAUTHORIZED {
-            warn!("401 from Strava, refreshing token");
-            let token = if let Some(tok) = self.token.lock().await.clone() {
-                self.refresh_token_with(&tok.refresh_token).await?
-            } else if let Some(ref rt) = self.cfg.strava.refresh_token {
-                self.refresh_token_with(rt).await?
-            } else {
-                self.authorize().await?
-            };
+            warn!("401 from Strava, requesting authorization");
+            let token = self.authorize().await?;
             info!("Retrying {} {} with bearer {}", method.as_str(), url, token.access_token);
             resp = self
                 .client
@@ -180,6 +136,5 @@ impl Auth {
 #[derive(Clone, Deserialize, Serialize)]
 struct Token {
     access_token: String,
-    refresh_token: String,
     expires_at: i64,
 }

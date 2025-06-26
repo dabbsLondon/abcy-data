@@ -15,8 +15,6 @@ Configuration is read from `config.toml` instead of environment variables. A min
 [strava]
 client_id = "12345"
 client_secret = "secret"
-# optional refresh token obtained during authorization
-refresh_token = ""
 token_path = "./token.json"      # cached access token and expiry
 
 [storage]
@@ -26,11 +24,9 @@ user = "athlete1"
 ```
 
 If the cached token has expired or the Strava API returns a `401`, the
-application automatically refreshes it using the stored `refresh_token`.
-The new access token, refresh token and expiry time are written to `token_path`
-and the expiry is logged. If no refresh token is provided the server will open
-a browser on startup to complete the OAuth flow and store the returned
-credentials.
+application launches the OAuth flow again so you can re-authorize access.
+The new access token and expiry time are written to `token_path` and the expiry
+is logged.
 
 ### Obtaining Strava Tokens
 
@@ -64,9 +60,8 @@ credentials.
        -d grant_type=authorization_code
    ```
 
-  The JSON response contains `refresh_token` which can be stored in your
-  configuration file. This step is optional because running the server with an
-  empty `refresh_token` will trigger the interactive authorization flow.
+  The JSON response includes a `refresh_token`, but this application ignores it
+  and will prompt for authorization again when needed.
 
 ## Running
 
@@ -86,9 +81,10 @@ On startup the app will:
 
 ### API Endpoints
 
-- `GET /activities` – ID, name, date and distance of all downloaded activities.
+- `GET /activities?count=n` – list activities ordered by newest first. If `count` is omitted all headers are returned.
 - `GET /activity/{id}` – full metadata and streams for an activity.
 - `GET /files` – recursive listing of everything under `DATA_DIR`.
+- `GET /raw/{path}` – return a stored file by relative path.
 - `POST /webhook` – Strava webhook endpoint used to fetch new data immediately.
 
 A Postman collection `abcy-data.postman_collection.json` is included to help
