@@ -84,6 +84,7 @@ On startup the app will:
 
 - `GET /activities?count=n` – list activities ordered by newest first. If `count` is omitted all headers are returned.
 - `GET /activity/{id}` – full metadata and streams (time and power) for an activity.
+- `GET /activity/{id}/summary` – small summary with duration and average power.
 - `GET /files` – recursive listing of everything under `DATA_DIR`.
 - `GET /raw/{path}` – return a stored file by relative path.
 - `POST /webhook` – Strava webhook endpoint used to fetch new data immediately.

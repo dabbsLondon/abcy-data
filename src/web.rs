@@ -23,6 +23,14 @@ async fn activity(id: web::Path<u64>, storage: web::Data<Storage>) -> impl Respo
     }
 }
 
+#[get("/activity/{id}/summary")]
+async fn activity_summary(id: web::Path<u64>, storage: web::Data<Storage>) -> impl Responder {
+    match storage.load_activity_summary(*id).await {
+        Ok(s) => HttpResponse::Ok().json(s),
+        Err(_) => HttpResponse::NotFound().finish(),
+    }
+}
+
 #[get("/files")]
 async fn files(storage: web::Data<Storage>) -> impl Responder {
     match storage.list_files().await {
@@ -66,6 +74,7 @@ pub async fn run(_config: Config, auth: Auth, storage: Storage) -> std::io::Resu
             .app_data(data_storage.clone())
             .service(activities)
             .service(activity)
+            .service(activity_summary)
             .service(files)
             .service(raw)
             .service(webhook)

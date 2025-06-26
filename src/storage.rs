@@ -86,6 +86,39 @@ impl Storage {
         anyhow::bail!("not found")
     }
 
+    pub async fn load_activity_summary(&self, id: u64) -> anyhow::Result<crate::schema::ActivitySummary> {
+        let detail = self.load_activity(id).await?;
+        let duration = detail
+            .meta
+            .get("elapsed_time")
+            .and_then(|v| v.as_i64())
+            .or_else(|| detail.streams.time.last().cloned())
+            .unwrap_or(0);
+        let average_power = if !detail.streams.power.is_empty() {
+            Some(detail.streams.power.iter().sum::<i64>() as f64 / detail.streams.power.len() as f64)
+        } else {
+            detail.meta.get("average_watts").and_then(|v| v.as_f64())
+        };
+        Ok(crate::schema::ActivitySummary {
+            id: detail.meta.get("id").and_then(|v| v.as_u64()).unwrap_or(id),
+            name: detail
+                .meta
+                .get("name")
+                .and_then(|v| v.as_str())
+                .unwrap_or("")
+                .to_string(),
+            start_date: detail
+                .meta
+                .get("start_date")
+                .and_then(|v| v.as_str())
+                .unwrap_or("")
+                .to_string(),
+            distance: detail.meta.get("distance").and_then(|v| v.as_f64()).unwrap_or(0.0),
+            duration,
+            average_power,
+        })
+    }
+
     pub async fn list_files(&self) -> anyhow::Result<Vec<String>> {
         let mut files = Vec::new();
         self.collect_sync(&self.base, "", &mut files)?;
