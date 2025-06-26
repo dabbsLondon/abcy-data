@@ -92,7 +92,7 @@ impl Auth {
             self.cfg.strava.client_id
         );
         webbrowser::open(&url).context("failed to open browser")?;
-        info!("Opened browser to URL");
+        info!("Opened browser to URL: {}", url);
 
         let server = tiny_http::Server::http("0.0.0.0:8080").map_err(|e| {
             anyhow::anyhow!("failed to bind to localhost:8080 (is it already running?): {}", e)
@@ -105,7 +105,7 @@ impl Auth {
             .get("code")
             .cloned()
             .context("missing code in redirect")?;
-        info!("Received redirect with code");
+        info!("Received redirect with code: {}", code);
 
         let mut response = tiny_http::Response::from_string(
             "<html><body><h2>Authorization complete. You may close this window.</h2></body></html>",
@@ -148,6 +148,7 @@ impl Auth {
 
     pub async fn request(&self, method: Method, url: &str) -> anyhow::Result<reqwest::Response> {
         let token = self.ensure_token().await?;
+        info!("HTTP {} {} with bearer {}", method.as_str(), url, token);
         let req = self.client.request(method.clone(), url).bearer_auth(&token);
         let mut resp = req.try_clone().unwrap().send().await?;
         if resp.status() == reqwest::StatusCode::UNAUTHORIZED {
@@ -159,6 +160,7 @@ impl Auth {
             } else {
                 self.authorize().await?
             };
+            info!("Retrying {} {} with bearer {}", method.as_str(), url, token.access_token);
             resp = self
                 .client
                 .request(method, url)
