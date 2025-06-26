@@ -8,6 +8,11 @@ pub async fn download_latest(auth: &Auth, storage: &Storage, count: usize) -> an
     info!("Requesting activity list: {}", url);
     let acts: Vec<ActivityHeader> = auth.get_json(&url).await?;
     for summary in acts {
+        let year = &summary.start_date[..4];
+        if storage.activity_exists(year, summary.id).await {
+            info!(id = summary.id, "activity already downloaded");
+            continue;
+        }
         info!(id = summary.id, name = %summary.name, "download activity");
         let meta_url = format!("{}/activities/{}", auth.cfg.base_url, summary.id);
         info!("Requesting activity metadata: {}", meta_url);

@@ -30,6 +30,11 @@ impl Storage {
         Ok(())
     }
 
+    pub async fn activity_exists(&self, year: &str, id: u64) -> bool {
+        let path = self.activity_dir(year, id).join("meta.json.zst");
+        fs::metadata(path).await.is_ok()
+    }
+
     async fn write_zstd<P: AsRef<Path>>(&self, path: P, value: &serde_json::Value) -> anyhow::Result<()> {
         let data = serde_json::to_vec(value)?;
         let compressed = encode_all(&data[..], 0)?;
