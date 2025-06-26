@@ -4,6 +4,7 @@ client_secret = "secret"
 # optional refresh token obtained via authorization
 refresh_token = ""
 token_path = "./token.json"      # cached access token and expiry
+                                   # `cargo run --bin authorize` writes here
 
 [storage]
 data_dir = "./data"
