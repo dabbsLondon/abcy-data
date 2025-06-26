@@ -1,4 +1,4 @@
-use crate::schema::{ActivityHeader, ActivityDetail};
+use crate::schema::{ActivityHeader, ActivityDetail, ParsedStreams};
 use crate::utils::Storage as StorageCfg;
 use std::path::{Path, PathBuf};
 use tokio::fs;
@@ -77,7 +77,9 @@ impl Storage {
             let dir = year.path().join(id.to_string());
             if fs::metadata(&dir).await.is_ok() {
                 let meta = self.read_zstd(dir.join("meta.json.zst")).await?;
-                let streams = self.read_zstd(dir.join("streams.json.zst")).await?;
+                let raw_streams = self.read_zstd(dir.join("streams.json.zst")).await?;
+                let streams = crate::schema::parse_streams(&raw_streams)
+                    .unwrap_or(ParsedStreams { time: vec![], power: vec![] });
                 return Ok(ActivityDetail { meta, streams });
             }
         }

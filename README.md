@@ -1,6 +1,6 @@
 # abcy-data
 
-This project synchronizes cycling activities from Strava and exposes a simple HTTP API.  Activity metadata and data streams are stored as compressed JSON files for further analysis.
+This project synchronizes cycling activities from Strava and exposes a simple HTTP API.  Activity metadata and data streams—including power output—are stored as compressed JSON files for further analysis.
 
 ## Requirements
 
@@ -75,14 +75,15 @@ The `default-run` target is configured, so this command starts the main
 On startup the app will:
 
 1. Query your most recent activities (count configured by `download_count`).
-2. Fetch metadata and data streams for each new activity and store them under
-   `DATA_DIR/<user>/<year>/<id>/` as `meta.json.zst` and `streams.json.zst`.
+2. Fetch metadata and data streams for each new activity (time and power when
+   available) and store them under `DATA_DIR/<user>/<year>/<id>/` as
+   `meta.json.zst` and `streams.json.zst`.
 3. Start an HTTP server on `localhost:8080`.
 
 ### API Endpoints
 
 - `GET /activities?count=n` – list activities ordered by newest first. If `count` is omitted all headers are returned.
-- `GET /activity/{id}` – full metadata and streams for an activity.
+- `GET /activity/{id}` – full metadata and streams (time and power) for an activity.
 - `GET /files` – recursive listing of everything under `DATA_DIR`.
 - `GET /raw/{path}` – return a stored file by relative path.
 - `POST /webhook` – Strava webhook endpoint used to fetch new data immediately.

@@ -15,7 +15,7 @@ The server listens on `localhost:8080` by default.
 ## HTTP endpoints
 
 - `GET /activities` – list downloaded activities (id, name, date, distance)
-- `GET /activity/{id}` – full metadata and streams for an activity
+- `GET /activity/{id}` – full metadata and streams (time and power) for an activity
 - `GET /files` – recursive listing of stored files
 - `POST /webhook` – Strava webhook used to trigger immediate downloads
 
@@ -43,7 +43,7 @@ The included `abcy-data.postman_collection.json` can be imported into Postman fo
 ## Modules
 
 - **auth** – handles Strava OAuth and token refresh logic
-- **fetch** – downloads activity metadata and streams
+- **fetch** – downloads activity metadata and streams (time and power)
 - **storage** – writes and reads compressed JSON files on disk
 - **web** – exposes the HTTP API routes
 - **schema** – shared structs for metadata and stream payloads
