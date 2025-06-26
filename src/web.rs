@@ -4,9 +4,12 @@ use crate::fetch;
 use crate::storage::Storage;
 use crate::utils::Config;
 
+#[derive(serde::Deserialize)]
+struct ActivityParams { count: Option<usize> }
+
 #[get("/activities")]
-async fn activities(storage: web::Data<Storage>) -> impl Responder {
-    match storage.list_activities().await {
+async fn activities(params: web::Query<ActivityParams>, storage: web::Data<Storage>) -> impl Responder {
+    match storage.list_activities(params.count).await {
         Ok(a) => HttpResponse::Ok().json(a),
         Err(_) => HttpResponse::InternalServerError().finish(),
     }
@@ -25,6 +28,14 @@ async fn files(storage: web::Data<Storage>) -> impl Responder {
     match storage.list_files().await {
         Ok(f) => HttpResponse::Ok().json(f),
         Err(_) => HttpResponse::InternalServerError().finish(),
+    }
+}
+
+#[get("/raw/{path:.*}")]
+async fn raw(path: web::Path<String>, storage: web::Data<Storage>) -> impl Responder {
+    match storage.read_file(&path.into_inner()).await {
+        Ok(data) => HttpResponse::Ok().body(data),
+        Err(_) => HttpResponse::NotFound().finish(),
     }
 }
 
@@ -56,6 +67,7 @@ pub async fn run(_config: Config, auth: Auth, storage: Storage) -> std::io::Resu
             .service(activities)
             .service(activity)
             .service(files)
+            .service(raw)
             .service(webhook)
     })
     .bind(("0.0.0.0", 8080))?

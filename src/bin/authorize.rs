@@ -9,7 +9,6 @@ use abcy_data::utils::Config;
 #[derive(Deserialize, serde::Serialize)]
 struct Token {
     access_token: String,
-    refresh_token: String,
     expires_at: i64,
 }
 
@@ -74,10 +73,10 @@ async fn main() -> anyhow::Result<()> {
     let token: Token = serde_json::from_str(&body).context("failed to parse token JSON")?;
     info!("Token exchange successful");
     info!("Access token: {}", token.access_token);
-    info!("Refresh token: {}", token.refresh_token);
     info!("Expires at (unix): {}", token.expires_at);
 
-    tokio::fs::write(token_path, &body).await?;
+    let sanitized = serde_json::to_vec(&token)?;
+    tokio::fs::write(token_path, &sanitized).await?;
     info!("Token saved to {}", token_path);
 
     Ok(())

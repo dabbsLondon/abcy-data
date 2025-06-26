@@ -44,7 +44,7 @@ impl Storage {
         Ok(serde_json::from_slice(&decompressed)?)
     }
 
-    pub async fn list_activities(&self) -> anyhow::Result<Vec<ActivityHeader>> {
+    pub async fn list_activities(&self, limit: Option<usize>) -> anyhow::Result<Vec<ActivityHeader>> {
         let mut list = Vec::new();
         if let Ok(mut years) = fs::read_dir(&self.base).await {
             while let Some(year) = years.next_entry().await? {
@@ -58,6 +58,10 @@ impl Storage {
                     }
                 }
             }
+        }
+        list.sort_by(|a, b| b.start_date.cmp(&a.start_date));
+        if let Some(n) = limit {
+            list.truncate(n);
         }
         Ok(list)
     }
@@ -92,5 +96,10 @@ impl Storage {
             }
         }
         Ok(())
+    }
+
+    pub async fn read_file(&self, path: &str) -> anyhow::Result<Vec<u8>> {
+        let full = self.base.join(path);
+        Ok(fs::read(full).await?)
     }
 }

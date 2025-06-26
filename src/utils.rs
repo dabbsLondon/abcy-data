@@ -6,7 +6,6 @@ use anyhow::Context;
 pub struct Strava {
     pub client_id: String,
     pub client_secret: String,
-    pub refresh_token: Option<String>,
     pub token_path: String,
 }
 
