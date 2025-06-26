@@ -43,14 +43,16 @@ credentials.
 
    After approving you will be redirected with a `code` query parameter.
 3. Instead of manually exchanging the code you can run the included
-   `authorize` binary which performs the full OAuth flow automatically:
+   `authorize` binary which performs the full OAuth flow automatically. The
+   binary reads `config.toml` for the Strava client credentials and writes the
+   returned tokens to the configured `token_path`:
 
    ```bash
    cargo run --bin authorize
    ```
 
    This opens a browser window, waits for the redirect and saves the returned
-   credentials to `strava_tokens.json`.
+   credentials to the path specified by `token_path`.
 
 4. If you prefer the manual approach, exchange the code via curl:
 

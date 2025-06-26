@@ -4,6 +4,8 @@ use serde::Deserialize;
 use std::collections::HashMap;
 use tracing::{error, info};
 
+use abcy_data::utils::Config;
+
 #[derive(Deserialize, serde::Serialize)]
 struct Token {
     access_token: String,
@@ -15,8 +17,10 @@ struct Token {
 async fn main() -> anyhow::Result<()> {
     tracing_subscriber::fmt::init();
 
-    let client_id = "165730";
-    let client_secret = "81a257622cb85c052d11065d08d399bd9dda83ea";
+    let cfg = Config::load("config.toml")?;
+    let client_id = &cfg.strava.client_id;
+    let client_secret = &cfg.strava.client_secret;
+    let token_path = &cfg.strava.token_path;
 
     let url = format!(
         "https://www.strava.com/oauth/authorize?client_id={}&response_type=code&redirect_uri=http://localhost:8080&approval_prompt=auto&scope=activity:read_all",
@@ -53,8 +57,8 @@ async fn main() -> anyhow::Result<()> {
     let resp = client
         .post("https://www.strava.com/api/v3/oauth/token")
         .form(&[
-            ("client_id", client_id),
-            ("client_secret", client_secret),
+            ("client_id", client_id.as_str()),
+            ("client_secret", client_secret.as_str()),
             ("code", &code),
             ("grant_type", "authorization_code"),
         ])
@@ -73,8 +77,8 @@ async fn main() -> anyhow::Result<()> {
     info!("Refresh token: {}", token.refresh_token);
     info!("Expires at (unix): {}", token.expires_at);
 
-    tokio::fs::write("strava_tokens.json", body).await?;
-    info!("Token saved to strava_tokens.json");
+    tokio::fs::write(token_path, &body).await?;
+    info!("Token saved to {}", token_path);
 
     Ok(())
 }
