@@ -79,7 +79,7 @@ impl Storage {
                 let meta = self.read_zstd(dir.join("meta.json.zst")).await?;
                 let raw_streams = self.read_zstd(dir.join("streams.json.zst")).await?;
                 let streams = crate::schema::parse_streams(&raw_streams)
-                    .unwrap_or(ParsedStreams { time: vec![], power: vec![] });
+                    .unwrap_or(ParsedStreams { time: vec![], power: vec![], heartrate: vec![] });
                 return Ok(ActivityDetail { meta, streams });
             }
         }
@@ -99,6 +99,24 @@ impl Storage {
         } else {
             detail.meta.get("average_watts").and_then(|v| v.as_f64())
         };
+        let distance = detail.meta.get("distance").and_then(|v| v.as_f64()).unwrap_or(0.0);
+        let average_speed = detail
+            .meta
+            .get("average_speed")
+            .and_then(|v| v.as_f64())
+            .or_else(|| if duration > 0 { Some(distance / duration as f64) } else { None });
+        let pr_count = detail.meta.get("pr_count").and_then(|v| v.as_i64());
+        let average_heartrate = if !detail.streams.heartrate.is_empty() {
+            Some(detail.streams.heartrate.iter().sum::<i64>() as f64 / detail.streams.heartrate.len() as f64)
+        } else {
+            detail.meta.get("average_heartrate").and_then(|v| v.as_f64())
+        };
+        let summary_polyline = detail
+            .meta
+            .get("map")
+            .and_then(|m| m.get("summary_polyline"))
+            .and_then(|v| v.as_str())
+            .map(|s| s.to_string());
         Ok(crate::schema::ActivitySummary {
             id: detail.meta.get("id").and_then(|v| v.as_u64()).unwrap_or(id),
             name: detail
@@ -116,6 +134,10 @@ impl Storage {
             distance: detail.meta.get("distance").and_then(|v| v.as_f64()).unwrap_or(0.0),
             duration,
             average_power,
+            average_speed,
+            pr_count,
+            average_heartrate,
+            summary_polyline,
         })
     }
 
