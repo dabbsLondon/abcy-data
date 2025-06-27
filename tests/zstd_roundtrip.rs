@@ -12,12 +12,12 @@ fn make_storage() -> Storage {
 async fn round_trip() {
     let storage = make_storage();
     let meta = json!({"id":1,"name":"ride","start_date":"2024-01-01","distance":1.0});
-    let streams = json!({"time": {"data": [1,2,3]}, "watts": {"data": [10,20]}});
+    let streams = json!({"time": {"data": [1,2,3]}, "watts": {"data": [10,20]}, "heartrate": {"data": [80,81,82]}});
     storage.save(&meta, &streams).await.unwrap();
     let act = storage.load_activity(1).await.unwrap();
     assert_eq!(act.meta, meta);
     assert_eq!(
         act.streams,
-        ParsedStreams { time: vec![1,2,3], power: vec![10,20] }
+        ParsedStreams { time: vec![1,2,3], power: vec![10,20], heartrate: vec![80,81,82] }
     );
 }
