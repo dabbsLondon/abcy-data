@@ -5,6 +5,18 @@ use tokio::fs;
 use tokio::io::AsyncWriteExt;
 use zstd::stream::{encode_all, decode_all};
 
+fn weighted_avg_power(power: &[i64]) -> f64 {
+    if power.is_empty() {
+        return 0.0;
+    }
+    let mean_fourth = power
+        .iter()
+        .map(|p| (*p as f64).powi(4))
+        .sum::<f64>()
+        / power.len() as f64;
+    mean_fourth.powf(0.25)
+}
+
 #[derive(Clone)]
 pub struct Storage {
     base: PathBuf,
@@ -95,17 +107,34 @@ impl Storage {
             .or_else(|| detail.streams.time.last().cloned())
             .unwrap_or(0);
         let average_power = if !detail.streams.power.is_empty() {
-            Some(detail.streams.power.iter().sum::<i64>() as f64 / detail.streams.power.len() as f64)
+            Some(weighted_avg_power(&detail.streams.power))
         } else {
-            detail.meta.get("average_watts").and_then(|v| v.as_f64())
+            detail.meta
+                .get("weighted_average_watts")
+                .and_then(|v| v.as_f64())
+                .or_else(|| detail.meta.get("average_watts").and_then(|v| v.as_f64()))
         };
         let distance = detail.meta.get("distance").and_then(|v| v.as_f64()).unwrap_or(0.0);
         let average_speed = detail
             .meta
             .get("average_speed")
             .and_then(|v| v.as_f64())
-            .or_else(|| if duration > 0 { Some(distance / duration as f64) } else { None });
-        let pr_count = detail.meta.get("pr_count").and_then(|v| v.as_i64());
+            .or_else(|| if duration > 0 { Some(distance / duration as f64) } else { None })
+            .map(|mps| mps * 3.6);
+        let pr_count = if let Some(efforts) = detail
+            .meta
+            .get("segment_efforts")
+            .and_then(|v| v.as_array())
+        {
+            Some(
+                efforts
+                    .iter()
+                    .filter(|e| e.get("pr_rank").and_then(|v| v.as_i64()) == Some(1))
+                    .count() as i64,
+            )
+        } else {
+            detail.meta.get("pr_count").and_then(|v| v.as_i64())
+        };
         let average_heartrate = if !detail.streams.heartrate.is_empty() {
             Some(detail.streams.heartrate.iter().sum::<i64>() as f64 / detail.streams.heartrate.len() as f64)
         } else {
