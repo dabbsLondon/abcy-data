@@ -77,16 +77,21 @@ On startup the app will:
 1. Query your most recent activities (count configured by `download_count`).
 2. Fetch metadata and data streams for each new activity (time and power when
    available) and store them under `DATA_DIR/<user>/<year>/<id>/` as
-   `meta.json.zst` and `streams.json.zst`.
+   `meta.json.zst` and `streams.json.zst`. During this step the service
+   computes normalized power (NP), intensity factor (IF) and training stress
+   score (TSS) using the current FTP value and writes them into `meta.json.zst`.
 3. Start an HTTP server on `localhost:8080`.
 
 ### API Endpoints
 
 - `GET /activities?count=n` – list activities ordered by newest first. If `count` is omitted all headers are returned.
 - `GET /activity/{id}` – full metadata and streams (time and power) for an activity.
-- `GET /activity/{id}/summary` – small summary with duration and average power.
+- `GET /activity/{id}/summary` – small summary with duration, power and training metrics.
 - `GET /files` – recursive listing of everything under `DATA_DIR`.
 - `GET /raw/{path}` – return a stored file by relative path.
+- `GET /ftp` – return the current FTP value.
+- `GET /ftp/history?count=n` – return the stored FTP history ordered by newest first, optionally limited to `n` items.
+- `POST /ftp` – append a new FTP value.
 - `POST /webhook` – Strava webhook endpoint used to fetch new data immediately.
 
 A Postman collection `abcy-data.postman_collection.json` is included to help
@@ -102,9 +107,10 @@ DATA_DIR/
       <id>/
         meta.json.zst
         streams.json.zst
+    ftp.json
 ```
 
-Metadata and streams are encoded with `serde_json` and compressed using zstd.
+Metadata and streams are encoded with `serde_json` and compressed using zstd. The `ftp.json` file stores your Functional Threshold Power history used to compute IF and TSS.
 
 ## Adding Another User
 

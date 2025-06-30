@@ -30,6 +30,12 @@ pub struct ActivitySummary {
     pub average_heartrate: Option<f64>,
     /// Summary polyline of the activity map if available
     pub summary_polyline: Option<String>,
+    /// Normalized power in watts if available
+    pub normalized_power: Option<f64>,
+    /// Intensity factor relative to FTP if available
+    pub intensity_factor: Option<f64>,
+    /// Training stress score if available
+    pub training_stress_score: Option<f64>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -42,7 +48,12 @@ pub struct ParsedStreams {
 }
 
 pub fn parse_streams(v: &serde_json::Value) -> Option<ParsedStreams> {
-    let time = v.get("time")?.get("data")?.as_array()?;
+    let time_val = v.get("time")?;
+    let time = if time_val.is_object() {
+        time_val.get("data")?.as_array()?
+    } else {
+        time_val.as_array()?
+    };
     let power = v
         .get("watts")
         .or_else(|| v.get("power"))
