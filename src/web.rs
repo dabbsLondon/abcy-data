@@ -2,6 +2,7 @@ use actix_web::{get, post, web, App, HttpServer, HttpResponse, Responder};
 use crate::auth::Auth;
 use crate::fetch;
 use crate::storage::Storage;
+use crate::stats::Period;
 use crate::utils::Config;
 
 #[derive(serde::Deserialize)]
@@ -127,6 +128,37 @@ async fn wkg_history(params: web::Query<WkgHistoryParams>, storage: web::Data<St
 }
 
 #[derive(serde::Deserialize)]
+struct StatsParams {
+    period: String,
+    ids: Option<String>,
+    types: Option<String>,
+}
+
+#[get("/stats")]
+async fn stats_get(params: web::Query<StatsParams>, storage: web::Data<Storage>) -> impl Responder {
+    let period = match params.period.as_str() {
+        "day" => Period::Day,
+        "week" => Period::Week,
+        "month" => Period::Month,
+        _ => Period::Year,
+    };
+    let ids = params.ids.as_deref().map(|s| {
+        s.split(',')
+            .filter_map(|v| v.parse::<u64>().ok())
+            .collect::<Vec<u64>>()
+    });
+    let types = params.types.as_deref().map(|s| {
+        s.split(',')
+            .map(|v| v.to_string())
+            .collect::<Vec<String>>()
+    });
+    match storage.activity_stats(period, ids.as_deref(), types.as_deref()).await {
+        Ok(s) => HttpResponse::Ok().json(s),
+        Err(_) => HttpResponse::InternalServerError().finish(),
+    }
+}
+
+#[derive(serde::Deserialize)]
 struct WebhookEvent {
     object_type: String,
     aspect_type: String,
@@ -164,6 +196,7 @@ pub async fn run(_config: Config, auth: Auth, storage: Storage) -> std::io::Resu
             .service(weight_post)
             .service(wkg_get)
             .service(wkg_history)
+            .service(stats_get)
             .service(webhook)
     })
     .bind(("0.0.0.0", 8080))?

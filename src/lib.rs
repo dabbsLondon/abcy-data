@@ -4,3 +4,4 @@ pub mod fetch;
 pub mod storage;
 pub mod web;
 pub mod schema;
+pub mod stats;
