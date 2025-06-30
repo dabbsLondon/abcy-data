@@ -9,12 +9,15 @@ fn weighted_avg_power(power: &[i64]) -> f64 {
     if power.is_empty() {
         return 0.0;
     }
-    let mean_fourth = power
-        .iter()
-        .map(|p| (*p as f64).powi(4))
-        .sum::<f64>()
-        / power.len() as f64;
-    mean_fourth.powf(0.25)
+    let window = 30.min(power.len());
+    let mut sum: i64 = power[..window].iter().sum();
+    let mut fourth_sum = (sum as f64 / window as f64).powi(4);
+    for i in window..power.len() {
+        sum += power[i] - power[i - window];
+        fourth_sum += (sum as f64 / window as f64).powi(4);
+    }
+    let count = power.len() - window + 1;
+    (fourth_sum / count as f64).powf(0.25)
 }
 
 #[derive(Clone)]
@@ -106,14 +109,16 @@ impl Storage {
             .and_then(|v| v.as_i64())
             .or_else(|| detail.streams.time.last().cloned())
             .unwrap_or(0);
-        let average_power = if !detail.streams.power.is_empty() {
-            Some(weighted_avg_power(&detail.streams.power))
-        } else {
-            detail.meta
-                .get("weighted_average_watts")
-                .and_then(|v| v.as_f64())
-                .or_else(|| detail.meta.get("average_watts").and_then(|v| v.as_f64()))
-        };
+        let average_power = detail
+            .meta
+            .get("weighted_average_watts")
+            .and_then(|v| v.as_f64())
+            .or_else(|| detail.meta.get("average_watts").and_then(|v| v.as_f64()))
+            .or_else(|| if !detail.streams.power.is_empty() {
+                Some(weighted_avg_power(&detail.streams.power))
+            } else {
+                None
+            });
         let distance = detail.meta.get("distance").and_then(|v| v.as_f64()).unwrap_or(0.0);
         let average_speed = detail
             .meta
