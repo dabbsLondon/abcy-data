@@ -97,10 +97,28 @@ On startup the app will:
 - `POST /weight` – append a new weight value.
 - `GET /wkg` – return the current watts per kilogram using FTP and weight.
 - `GET /wkg/history?count=n` – return stored watts per kilogram history.
+- `GET /stats?period=week&ids=1,2&types=Ride` – aggregated statistics grouped by day, week,
+  month or year. Optional filters allow specifying a comma-separated list of activity
+  IDs with `ids` and a list of activity types with `types` (e.g. `Ride`, `Run`).
+  Available IDs can be obtained from the `/activities` endpoint.
 - `POST /webhook` – Strava webhook endpoint used to fetch new data immediately.
 
 A Postman collection `abcy-data.postman_collection.json` is included to help
 test the endpoints. Set the `base_url` variable to your server's address.
+
+Example statistics request:
+
+```bash
+curl "http://localhost:8080/stats?period=month&ids=123,124&types=Ride"
+```
+
+This returns aggregated metrics for the selected Ride activities grouped by month.
+The `period` parameter accepts `day`, `week`, `month` or `year` to control
+how statistics are grouped. Each response entry contains the period label,
+ride count, total distance, average weighted power, average intensity
+factor, cumulative training stress and average speed. Provide a comma
+separated list of activity IDs through `ids` to limit the aggregation and
+use the `types` parameter to restrict results to certain activity types.
 Automated tools can refer to `AGENTS.md` for a short Python example.
 
 Downloaded activities are organised as:

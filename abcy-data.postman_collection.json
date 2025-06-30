@@ -26,6 +26,14 @@
       "request": { "method": "GET", "url": "{{base_url}}/raw/{{path}}" }
     },
     {
+      "name": "Activity Stats",
+      "request": {
+        "method": "GET",
+        "url": "{{base_url}}/stats?period={{period}}&ids={{ids}}&types={{types}}"
+      },
+      "description": "Return aggregated metrics grouped by `period`. Valid values are `day`, `week`, `month` and `year`. Optional `ids` and `types` query strings filter the activities."
+    },
+    {
       "name": "Send Webhook Event",
       "request": {
         "method": "POST",

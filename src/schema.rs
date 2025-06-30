@@ -36,6 +36,8 @@ pub struct ActivitySummary {
     pub intensity_factor: Option<f64>,
     /// Training stress score if available
     pub training_stress_score: Option<f64>,
+    /// Activity type such as Ride or Run if available
+    pub activity_type: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]

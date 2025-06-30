@@ -365,6 +365,11 @@ impl Storage {
             .and_then(|m| m.get("summary_polyline"))
             .and_then(|v| v.as_str())
             .map(|s| s.to_string());
+        let activity_type = detail
+            .meta
+            .get("type")
+            .and_then(|v| v.as_str())
+            .map(|s| s.to_string());
         Ok(crate::schema::ActivitySummary {
             id: detail.meta.get("id").and_then(|v| v.as_u64()).unwrap_or(id),
             name: detail
@@ -389,6 +394,7 @@ impl Storage {
             normalized_power,
             intensity_factor,
             training_stress_score,
+            activity_type,
         })
     }
 

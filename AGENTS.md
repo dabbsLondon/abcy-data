@@ -26,6 +26,13 @@ The server listens on `localhost:8080` by default.
 - `GET /wkg` – return watts per kilogram using the current FTP and weight
 - `GET /wkg/history?count=n` – return stored watts per kilogram history
 - `POST /webhook` – Strava webhook used to trigger immediate downloads
+- `GET /stats?period=week&ids=1,2&types=Ride` – aggregated statistics grouped by day, week,
+  month or year. Optional comma-separated `ids` and `types` filters restrict the
+  activities considered. The `period` parameter accepts `day`, `week`, `month`
+  or `year`.
+  The response includes ride count, total distance, average weighted power,
+  average intensity factor, total training stress and average speed for each
+  period returned.
 
 Activity summaries now include normalized power (NP), intensity factor (IF) and training stress score (TSS) calculated using the stored FTP value.
 
