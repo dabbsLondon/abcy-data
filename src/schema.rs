@@ -45,7 +45,8 @@ pub fn parse_streams(v: &serde_json::Value) -> Option<ParsedStreams> {
     let time = v.get("time")?.get("data")?.as_array()?;
     let power = v
         .get("watts")
-        .and_then(|p| p.get("data"))
+        .or_else(|| v.get("power"))
+        .and_then(|p| if p.is_object() { p.get("data") } else { Some(p) })
         .and_then(|d| d.as_array())
         .map(|arr| arr.iter().map(|x| x.as_i64().unwrap_or(0)).collect())
         .unwrap_or_else(Vec::new);
