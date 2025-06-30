@@ -1,5 +1,6 @@
 use crate::schema::{ActivityHeader, ActivityDetail, ParsedStreams};
 use crate::utils::Storage as StorageCfg;
+use chrono::Utc;
 use std::path::{Path, PathBuf};
 use tokio::fs;
 use tokio::io::AsyncWriteExt;
@@ -20,6 +21,12 @@ fn weighted_avg_power(power: &[i64]) -> f64 {
     (fourth_sum / count as f64).powf(0.25)
 }
 
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct FtpEntry {
+    pub date: String,
+    pub ftp: f64,
+}
+
 #[derive(Clone)]
 pub struct Storage {
     base: PathBuf,
@@ -34,13 +41,84 @@ impl Storage {
         self.base.join(year).join(id.to_string())
     }
 
+    fn ftp_path(&self) -> PathBuf {
+        self.base.join("ftp.json")
+    }
+
+    async fn load_ftp_history(&self) -> anyhow::Result<Vec<FtpEntry>> {
+        let path = self.ftp_path();
+        if let Ok(data) = fs::read(&path).await {
+            Ok(serde_json::from_slice(&data)?)
+        } else {
+            Ok(Vec::new())
+        }
+    }
+
+    async fn save_ftp_history(&self, hist: &[FtpEntry]) -> anyhow::Result<()> {
+        let data = serde_json::to_vec(hist)?;
+        if let Some(parent) = self.ftp_path().parent() {
+            fs::create_dir_all(parent).await?;
+        }
+        fs::write(self.ftp_path(), data).await?;
+        Ok(())
+    }
+
+    pub async fn get_ftp_history(&self) -> anyhow::Result<Vec<FtpEntry>> {
+        let mut hist = self.load_ftp_history().await?;
+        if hist.is_empty() {
+            hist.push(FtpEntry { date: Utc::now().date_naive().to_string(), ftp: 240.0 });
+            self.save_ftp_history(&hist).await?;
+        }
+        Ok(hist)
+    }
+
+    pub async fn current_ftp(&self) -> anyhow::Result<f64> {
+        Ok(self.get_ftp_history().await?.last().map(|e| e.ftp).unwrap_or(240.0))
+    }
+
+    pub async fn ftp_history(&self, count: Option<usize>) -> anyhow::Result<Vec<FtpEntry>> {
+        let mut hist = self.get_ftp_history().await?;
+        hist.reverse();
+        if let Some(n) = count {
+            hist.truncate(n);
+        }
+        Ok(hist)
+    }
+
+    pub async fn set_ftp(&self, ftp: f64) -> anyhow::Result<()> {
+        let mut hist = self.get_ftp_history().await?;
+        hist.push(FtpEntry { date: Utc::now().date_naive().to_string(), ftp });
+        self.save_ftp_history(&hist).await
+    }
+
     pub async fn save(&self, meta: &serde_json::Value, streams: &serde_json::Value) -> anyhow::Result<()> {
         let date = meta["start_date"].as_str().unwrap_or("1970-01-01");
         let year = &date[..4];
         let id = meta["id"].as_u64().unwrap();
         let dir = self.activity_dir(year, id);
         fs::create_dir_all(&dir).await?;
-        self.write_zstd(dir.join("meta.json.zst"), meta).await?;
+
+        let mut meta = meta.clone();
+        if let Some(parsed) = crate::schema::parse_streams(streams) {
+            if !parsed.power.is_empty() {
+                let np = weighted_avg_power(&parsed.power);
+                let ftp = self.current_ftp().await.unwrap_or(240.0);
+                let duration = meta
+                    .get("elapsed_time")
+                    .and_then(|v| v.as_i64())
+                    .or_else(|| parsed.time.last().cloned())
+                    .unwrap_or(0) as f64;
+                let ifv = np / ftp;
+                let tss = (duration * np * ifv) / (ftp * 3600.0) * 100.0;
+                if let Some(obj) = meta.as_object_mut() {
+                    obj.insert("normalized_power".into(), serde_json::Value::from(np));
+                    obj.insert("intensity_factor".into(), serde_json::Value::from(ifv));
+                    obj.insert("training_stress_score".into(), serde_json::Value::from(tss));
+                }
+            }
+        }
+
+        self.write_zstd(dir.join("meta.json.zst"), &meta).await?;
         self.write_zstd(dir.join("streams.json.zst"), streams).await?;
         Ok(())
     }
@@ -145,6 +223,24 @@ impl Storage {
         } else {
             detail.meta.get("average_heartrate").and_then(|v| v.as_f64())
         };
+        let normalized_power = detail
+            .meta
+            .get("normalized_power")
+            .and_then(|v| v.as_f64())
+            .or_else(|| if !detail.streams.power.is_empty() {
+                Some(weighted_avg_power(&detail.streams.power))
+            } else { None });
+        let ftp = self.current_ftp().await.unwrap_or(240.0);
+        let intensity_factor = detail
+            .meta
+            .get("intensity_factor")
+            .and_then(|v| v.as_f64())
+            .or_else(|| normalized_power.map(|np| np / ftp));
+        let training_stress_score = detail
+            .meta
+            .get("training_stress_score")
+            .and_then(|v| v.as_f64())
+            .or_else(|| normalized_power.map(|np| (duration as f64 * np * (np / ftp)) / (ftp * 3600.0) * 100.0));
         let summary_polyline = detail
             .meta
             .get("map")
@@ -172,6 +268,9 @@ impl Storage {
             pr_count,
             average_heartrate,
             summary_polyline,
+            normalized_power,
+            intensity_factor,
+            training_stress_score,
         })
     }
 

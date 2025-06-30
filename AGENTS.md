@@ -17,7 +17,12 @@ The server listens on `localhost:8080` by default.
 - `GET /activities` – list downloaded activities (id, name, date, distance)
 - `GET /activity/{id}` – full metadata and streams (time and power) for an activity
 - `GET /files` – recursive listing of stored files
+- `GET /ftp` – return the current FTP value
+- `GET /ftp/history?count=n` – return FTP history ordered by newest first, optionally limited to `n` entries
+- `POST /ftp` – append a new FTP value
 - `POST /webhook` – Strava webhook used to trigger immediate downloads
+
+Activity summaries now include normalized power (NP), intensity factor (IF) and training stress score (TSS) calculated using the stored FTP value.
 
 ## Python usage
 
