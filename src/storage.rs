@@ -27,6 +27,18 @@ pub struct FtpEntry {
     pub ftp: f64,
 }
 
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct WeightEntry {
+    pub date: String,
+    pub weight: f64,
+}
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct WkgEntry {
+    pub date: String,
+    pub wkg: f64,
+}
+
 #[derive(Clone)]
 pub struct Storage {
     base: PathBuf,
@@ -43,6 +55,14 @@ impl Storage {
 
     fn ftp_path(&self) -> PathBuf {
         self.base.join("ftp.json")
+    }
+
+    fn weight_path(&self) -> PathBuf {
+        self.base.join("weight.json")
+    }
+
+    fn wkg_path(&self) -> PathBuf {
+        self.base.join("wkg.json")
     }
 
     async fn load_ftp_history(&self) -> anyhow::Result<Vec<FtpEntry>> {
@@ -88,7 +108,105 @@ impl Storage {
     pub async fn set_ftp(&self, ftp: f64) -> anyhow::Result<()> {
         let mut hist = self.get_ftp_history().await?;
         hist.push(FtpEntry { date: Utc::now().date_naive().to_string(), ftp });
-        self.save_ftp_history(&hist).await
+        self.save_ftp_history(&hist).await?;
+        let weight = self.current_weight().await.unwrap_or(75.0);
+        self.record_wkg(ftp / weight).await
+    }
+
+    async fn load_weight_history(&self) -> anyhow::Result<Vec<WeightEntry>> {
+        let path = self.weight_path();
+        if let Ok(data) = fs::read(&path).await {
+            Ok(serde_json::from_slice(&data)?)
+        } else {
+            Ok(Vec::new())
+        }
+    }
+
+    async fn save_weight_history(&self, hist: &[WeightEntry]) -> anyhow::Result<()> {
+        let data = serde_json::to_vec(hist)?;
+        if let Some(parent) = self.weight_path().parent() {
+            fs::create_dir_all(parent).await?;
+        }
+        fs::write(self.weight_path(), data).await?;
+        Ok(())
+    }
+
+    pub async fn get_weight_history(&self) -> anyhow::Result<Vec<WeightEntry>> {
+        let mut hist = self.load_weight_history().await?;
+        if hist.is_empty() {
+            hist.push(WeightEntry { date: Utc::now().date_naive().to_string(), weight: 75.0 });
+            self.save_weight_history(&hist).await?;
+        }
+        Ok(hist)
+    }
+
+    pub async fn current_weight(&self) -> anyhow::Result<f64> {
+        Ok(self.get_weight_history().await?.last().map(|e| e.weight).unwrap_or(75.0))
+    }
+
+    pub async fn weight_history(&self, count: Option<usize>) -> anyhow::Result<Vec<WeightEntry>> {
+        let mut hist = self.get_weight_history().await?;
+        hist.reverse();
+        if let Some(n) = count {
+            hist.truncate(n);
+        }
+        Ok(hist)
+    }
+
+    pub async fn set_weight(&self, weight: f64) -> anyhow::Result<()> {
+        let mut hist = self.get_weight_history().await?;
+        hist.push(WeightEntry { date: Utc::now().date_naive().to_string(), weight });
+        self.save_weight_history(&hist).await?;
+        let ftp = self.current_ftp().await.unwrap_or(240.0);
+        self.record_wkg(ftp / weight).await
+    }
+
+    async fn load_wkg_history(&self) -> anyhow::Result<Vec<WkgEntry>> {
+        let path = self.wkg_path();
+        if let Ok(data) = fs::read(&path).await {
+            Ok(serde_json::from_slice(&data)?)
+        } else {
+            Ok(Vec::new())
+        }
+    }
+
+    async fn save_wkg_history(&self, hist: &[WkgEntry]) -> anyhow::Result<()> {
+        let data = serde_json::to_vec(hist)?;
+        if let Some(parent) = self.wkg_path().parent() {
+            fs::create_dir_all(parent).await?;
+        }
+        fs::write(self.wkg_path(), data).await?;
+        Ok(())
+    }
+
+    pub async fn get_wkg_history(&self) -> anyhow::Result<Vec<WkgEntry>> {
+        let mut hist = self.load_wkg_history().await?;
+        if hist.is_empty() {
+            let ftp = self.current_ftp().await.unwrap_or(240.0);
+            let weight = self.current_weight().await.unwrap_or(75.0);
+            hist.push(WkgEntry { date: Utc::now().date_naive().to_string(), wkg: ftp / weight });
+            self.save_wkg_history(&hist).await?;
+        }
+        Ok(hist)
+    }
+
+    pub async fn current_wkg(&self) -> anyhow::Result<f64> {
+        Ok(self.get_wkg_history().await?.last().map(|e| e.wkg).unwrap_or(0.0))
+    }
+
+    pub async fn wkg_history(&self, count: Option<usize>) -> anyhow::Result<Vec<WkgEntry>> {
+        let mut hist = self.get_wkg_history().await?;
+        hist.reverse();
+        if let Some(n) = count {
+            hist.truncate(n);
+        }
+        Ok(hist)
+    }
+
+    async fn record_wkg(&self, wkg: f64) -> anyhow::Result<()> {
+        let mut hist = self.get_wkg_history().await?;
+        hist.push(WkgEntry { date: Utc::now().date_naive().to_string(), wkg });
+        self.save_wkg_history(&hist).await
     }
 
     pub async fn save(&self, meta: &serde_json::Value, streams: &serde_json::Value) -> anyhow::Result<()> {

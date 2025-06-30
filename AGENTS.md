@@ -20,6 +20,11 @@ The server listens on `localhost:8080` by default.
 - `GET /ftp` – return the current FTP value
 - `GET /ftp/history?count=n` – return FTP history ordered by newest first, optionally limited to `n` entries
 - `POST /ftp` – append a new FTP value
+- `GET /weight` – return the current weight in kilograms
+- `GET /weight/history?count=n` – return weight history ordered by newest first, optionally limited to `n` entries
+- `POST /weight` – append a new weight value
+- `GET /wkg` – return watts per kilogram using the current FTP and weight
+- `GET /wkg/history?count=n` – return stored watts per kilogram history
 - `POST /webhook` – Strava webhook used to trigger immediate downloads
 
 Activity summaries now include normalized power (NP), intensity factor (IF) and training stress score (TSS) calculated using the stored FTP value.
@@ -57,3 +62,5 @@ The included `abcy-data.postman_collection.json` can be imported into Postman fo
 Downloaded activities are stored under `DATA_DIR/<user>/<year>/<id>` where
 `<user>` is configured in `config.toml`. Each directory contains
 `meta.json.zst` and `streams.json.zst`.
+The `<user>` directory also stores `ftp.json`, `weight.json` and
+`wkg.json` tracking your FTP, weight and watts-per-kilogram history.

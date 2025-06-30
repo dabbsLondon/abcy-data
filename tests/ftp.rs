@@ -28,3 +28,12 @@ async fn ftp_history_update() {
     assert_eq!(recent.len(), 1);
     assert_eq!(recent[0].ftp, 250.0);
 }
+
+#[tokio::test]
+async fn ftp_updates_wkg() {
+    let storage = make_storage();
+    storage.set_ftp(255.0).await.unwrap();
+    let weight = storage.current_weight().await.unwrap();
+    let wkg = storage.current_wkg().await.unwrap();
+    assert!((wkg - 255.0 / weight).abs() < 1e-6);
+}
