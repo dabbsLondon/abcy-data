@@ -92,6 +92,11 @@ On startup the app will:
 - `GET /ftp` – return the current FTP value.
 - `GET /ftp/history?count=n` – return the stored FTP history ordered by newest first, optionally limited to `n` items.
 - `POST /ftp` – append a new FTP value.
+- `GET /weight` – return the current weight in kilograms.
+- `GET /weight/history?count=n` – return weight history ordered by newest first, optionally limited to `n` items.
+- `POST /weight` – append a new weight value.
+- `GET /wkg` – return the current watts per kilogram using FTP and weight.
+- `GET /wkg/history?count=n` – return stored watts per kilogram history.
 - `POST /webhook` – Strava webhook endpoint used to fetch new data immediately.
 
 A Postman collection `abcy-data.postman_collection.json` is included to help
@@ -108,9 +113,11 @@ DATA_DIR/
         meta.json.zst
         streams.json.zst
     ftp.json
+    weight.json
+    wkg.json
 ```
 
-Metadata and streams are encoded with `serde_json` and compressed using zstd. The `ftp.json` file stores your Functional Threshold Power history used to compute IF and TSS.
+Metadata and streams are encoded with `serde_json` and compressed using zstd. The `ftp.json` file stores your Functional Threshold Power history used to compute IF and TSS. The `weight.json` file tracks weight changes and `wkg.json` stores watts per kilogram over time.
 
 ## Adding Another User
 

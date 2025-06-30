@@ -77,6 +77,55 @@ async fn ftp_post(info: web::Json<FtpUpdate>, storage: web::Data<Storage>) -> im
     }
 }
 
+#[get("/weight")]
+async fn weight_get(storage: web::Data<Storage>) -> impl Responder {
+    match storage.current_weight().await {
+        Ok(w) => HttpResponse::Ok().json(w),
+        Err(_) => HttpResponse::InternalServerError().finish(),
+    }
+}
+
+#[derive(serde::Deserialize)]
+struct WeightHistoryParams { count: Option<usize> }
+
+#[get("/weight/history")]
+async fn weight_history(params: web::Query<WeightHistoryParams>, storage: web::Data<Storage>) -> impl Responder {
+    match storage.weight_history(params.count).await {
+        Ok(h) => HttpResponse::Ok().json(h),
+        Err(_) => HttpResponse::InternalServerError().finish(),
+    }
+}
+
+#[derive(serde::Deserialize)]
+struct WeightUpdate { weight: f64 }
+
+#[post("/weight")]
+async fn weight_post(info: web::Json<WeightUpdate>, storage: web::Data<Storage>) -> impl Responder {
+    match storage.set_weight(info.weight).await {
+        Ok(_) => HttpResponse::Ok().finish(),
+        Err(_) => HttpResponse::InternalServerError().finish(),
+    }
+}
+
+#[get("/wkg")]
+async fn wkg_get(storage: web::Data<Storage>) -> impl Responder {
+    match storage.current_wkg().await {
+        Ok(v) => HttpResponse::Ok().json(v),
+        Err(_) => HttpResponse::InternalServerError().finish(),
+    }
+}
+
+#[derive(serde::Deserialize)]
+struct WkgHistoryParams { count: Option<usize> }
+
+#[get("/wkg/history")]
+async fn wkg_history(params: web::Query<WkgHistoryParams>, storage: web::Data<Storage>) -> impl Responder {
+    match storage.wkg_history(params.count).await {
+        Ok(h) => HttpResponse::Ok().json(h),
+        Err(_) => HttpResponse::InternalServerError().finish(),
+    }
+}
+
 #[derive(serde::Deserialize)]
 struct WebhookEvent {
     object_type: String,
@@ -110,6 +159,11 @@ pub async fn run(_config: Config, auth: Auth, storage: Storage) -> std::io::Resu
             .service(ftp_get)
             .service(ftp_history)
             .service(ftp_post)
+            .service(weight_get)
+            .service(weight_history)
+            .service(weight_post)
+            .service(wkg_get)
+            .service(wkg_history)
             .service(webhook)
     })
     .bind(("0.0.0.0", 8080))?
