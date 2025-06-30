@@ -1,0 +1,100 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "abcy-data API",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/activities": {
+      "get": {
+        "summary": "List recent activities",
+        "parameters": [
+          {
+            "name": "count",
+            "in": "query",
+            "required": false,
+            "schema": {"type": "integer"}
+          }
+        ],
+        "responses": {
+          "200": {"description": "Activity list"}
+        }
+      }
+    },
+    "/activity/{id}": {
+      "get": {
+        "summary": "Full activity metadata and streams",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "integer"}
+          }
+        ],
+        "responses": {
+          "200": {"description": "Activity data"},
+          "404": {"description": "Not found"}
+        }
+      }
+    },
+    "/activity/{id}/summary": {
+      "get": {
+        "summary": "Small summary for an activity",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "integer"}
+          }
+        ],
+        "responses": {
+          "200": {"description": "Summary data"},
+          "404": {"description": "Not found"}
+        }
+      }
+    },
+    "/ftp": {
+      "get": {"summary": "Current FTP", "responses": {"200": {"description": "Current FTP"}}},
+      "post": {
+        "summary": "Append new FTP value",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {"type": "object", "properties": {"ftp": {"type": "number"}}, "required": ["ftp"]}
+            }
+          }
+        },
+        "responses": {"200": {"description": "Updated"}}
+      }
+    },
+    "/weight": {
+      "get": {"summary": "Current weight", "responses": {"200": {"description": "Current weight"}}},
+      "post": {
+        "summary": "Append new weight value",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {"type": "object", "properties": {"weight": {"type": "number"}}, "required": ["weight"]}
+            }
+          }
+        },
+        "responses": {"200": {"description": "Updated"}}
+      }
+    },
+    "/stats": {
+      "get": {
+        "summary": "Aggregated statistics",
+        "parameters": [
+          {"name": "period", "in": "query", "required": true, "schema": {"type": "string", "enum": ["day","week","month","year"]}},
+          {"name": "ids", "in": "query", "required": false, "schema": {"type": "string"}},
+          {"name": "types", "in": "query", "required": false, "schema": {"type": "string"}}
+        ],
+        "responses": {"200": {"description": "Stats"}}
+      }
+    }
+  }
+}

@@ -25,6 +25,7 @@ The server listens on `localhost:8080` by default.
 - `POST /weight` – append a new weight value
 - `GET /wkg` – return watts per kilogram using the current FTP and weight
 - `GET /wkg/history?count=n` – return stored watts per kilogram history
+- `GET /openapi.json` – machine-readable OpenAPI description of all endpoints
 - `POST /webhook` – Strava webhook used to trigger immediate downloads
 - `GET /stats?period=week&ids=1,2&types=Ride` – aggregated statistics grouped by day, week,
   month or year. Optional comma-separated `ids` and `types` filters restrict the
