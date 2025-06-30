@@ -5,6 +5,13 @@ use crate::storage::Storage;
 use crate::stats::Period;
 use crate::utils::Config;
 
+#[get("/openapi.json")]
+async fn openapi_spec() -> impl Responder {
+    HttpResponse::Ok()
+        .content_type("application/json")
+        .body(include_str!("../openapi.json"))
+}
+
 #[derive(serde::Deserialize)]
 struct ActivityParams { count: Option<usize> }
 
@@ -196,6 +203,7 @@ pub async fn run(_config: Config, auth: Auth, storage: Storage) -> std::io::Resu
             .service(weight_post)
             .service(wkg_get)
             .service(wkg_history)
+            .service(openapi_spec)
             .service(stats_get)
             .service(webhook)
     })

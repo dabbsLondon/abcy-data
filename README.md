@@ -97,6 +97,7 @@ On startup the app will:
 - `POST /weight` – append a new weight value.
 - `GET /wkg` – return the current watts per kilogram using FTP and weight.
 - `GET /wkg/history?count=n` – return stored watts per kilogram history.
+- `GET /openapi.json` – machine-readable OpenAPI description of all endpoints.
 - `GET /stats?period=week&ids=1,2&types=Ride` – aggregated statistics grouped by day, week,
   month or year. Optional filters allow specifying a comma-separated list of activity
   IDs with `ids` and a list of activity types with `types` (e.g. `Ride`, `Run`).
