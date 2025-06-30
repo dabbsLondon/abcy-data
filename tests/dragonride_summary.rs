@@ -18,4 +18,10 @@ async fn dragonride_average_power() {
     storage.save(meta, streams).await.unwrap();
     let summary = storage.load_activity_summary(meta["id"].as_u64().unwrap()).await.unwrap();
     assert_eq!(summary.average_power.unwrap().round() as i64, 160);
+    let np = summary.normalized_power.unwrap();
+    let ifv = summary.intensity_factor.unwrap();
+    let tss = summary.training_stress_score.unwrap();
+    assert!((np - 170.09).abs() < 0.1);
+    assert!((ifv - 0.7087).abs() < 0.001);
+    assert!((tss - 443.18).abs() < 1.0);
 }
