@@ -86,8 +86,9 @@ On startup the app will:
 
 The service tracks two additional metrics derived from your recent training:
 
-- **EnduroScore** – gauges long-ride durability using the average distance and
-  duration of your long rides, weekly volume and the last four weeks of training
+- **EnduroScore** – gauges long-ride durability using the typical distance and
+  duration of your long rides (measured as kilometres × hours divided by twenty),
+  weekly volume and the last four weeks of training
   stress. The score decays if no long ride was completed in the past 14 days.
 - **FitnessScore** – reflects overall aerobic conditioning. It combines weekly
   training hours (times four), the four‑week average Training Stress Score
