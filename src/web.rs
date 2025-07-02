@@ -135,6 +135,41 @@ async fn wkg_history(params: web::Query<WkgHistoryParams>, storage: web::Data<St
 }
 
 #[derive(serde::Deserialize)]
+struct ScoreHistoryParams { count: Option<usize> }
+
+#[get("/enduro")]
+async fn enduro_get(storage: web::Data<Storage>) -> impl Responder {
+    match storage.update_enduro().await {
+        Ok(v) => HttpResponse::Ok().json(v),
+        Err(_) => HttpResponse::InternalServerError().finish(),
+    }
+}
+
+#[get("/enduro/history")]
+async fn enduro_history(params: web::Query<ScoreHistoryParams>, storage: web::Data<Storage>) -> impl Responder {
+    match storage.enduro_history(params.count).await {
+        Ok(h) => HttpResponse::Ok().json(h),
+        Err(_) => HttpResponse::InternalServerError().finish(),
+    }
+}
+
+#[get("/fitness")]
+async fn fitness_get(storage: web::Data<Storage>) -> impl Responder {
+    match storage.update_fitness().await {
+        Ok(v) => HttpResponse::Ok().json(v),
+        Err(_) => HttpResponse::InternalServerError().finish(),
+    }
+}
+
+#[get("/fitness/history")]
+async fn fitness_history(params: web::Query<ScoreHistoryParams>, storage: web::Data<Storage>) -> impl Responder {
+    match storage.fitness_history(params.count).await {
+        Ok(h) => HttpResponse::Ok().json(h),
+        Err(_) => HttpResponse::InternalServerError().finish(),
+    }
+}
+
+#[derive(serde::Deserialize)]
 struct StatsParams {
     period: String,
     ids: Option<String>,
@@ -203,6 +238,10 @@ pub async fn run(_config: Config, auth: Auth, storage: Storage) -> std::io::Resu
             .service(weight_post)
             .service(wkg_get)
             .service(wkg_history)
+            .service(enduro_get)
+            .service(enduro_history)
+            .service(fitness_get)
+            .service(fitness_history)
             .service(openapi_spec)
             .service(stats_get)
             .service(webhook)

@@ -25,6 +25,10 @@ The server listens on `localhost:8080` by default.
 - `POST /weight` – append a new weight value
 - `GET /wkg` – return watts per kilogram using the current FTP and weight
 - `GET /wkg/history?count=n` – return stored watts per kilogram history
+- `GET /enduro` – compute the current EnduroScore and store it
+- `GET /enduro/history?count=n` – return EnduroScore history
+- `GET /fitness` – compute the current FitnessScore and store it
+- `GET /fitness/history?count=n` – return FitnessScore history
 - `GET /openapi.json` – machine-readable OpenAPI description of all endpoints
 - `POST /webhook` – Strava webhook used to trigger immediate downloads
 - `GET /stats?period=week&ids=1,2&types=Ride` – aggregated statistics grouped by day, week,
@@ -71,4 +75,5 @@ Downloaded activities are stored under `DATA_DIR/<user>/<year>/<id>` where
 `<user>` is configured in `config.toml`. Each directory contains
 `meta.json.zst` and `streams.json.zst`.
 The `<user>` directory also stores `ftp.json`, `weight.json` and
-`wkg.json` tracking your FTP, weight and watts-per-kilogram history.
+`wkg.json` tracking your FTP, weight and watts-per-kilogram history, and
+`enduro.json` and `fitness.json` storing the ride readiness scores.

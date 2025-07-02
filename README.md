@@ -82,6 +82,25 @@ On startup the app will:
    score (TSS) using the current FTP value and writes them into `meta.json.zst`.
 3. Start an HTTP server on `localhost:8080`.
 
+### Ride Readiness Scores
+
+The service tracks two additional metrics derived from your recent training:
+
+- **EnduroScore** – gauges long-ride durability using the average distance and
+  duration of your long rides, weekly volume and the last four weeks of training
+  stress. The score decays if no long ride was completed in the past 14 days.
+- **FitnessScore** – reflects overall aerobic conditioning. It combines weekly
+  training hours (times four), the four‑week average Training Stress Score
+  (divided by ten) and a bonus for frequent long rides. After three consecutive
+  rest days the score decreases by 1.5% per day.
+
+Scores roughly range as follows:
+
+- 80–100: Event-ready endurance and fitness
+- 60–79: Solid aerobic base
+- 40–59: Building phase
+- < 40: Detraining or early base period
+
 ### API Endpoints
 
 - `GET /activities?count=n` – list activities ordered by newest first. If `count` is omitted all headers are returned.
@@ -97,6 +116,10 @@ On startup the app will:
 - `POST /weight` – append a new weight value.
 - `GET /wkg` – return the current watts per kilogram using FTP and weight.
 - `GET /wkg/history?count=n` – return stored watts per kilogram history.
+- `GET /enduro` – compute the current EnduroScore and store it.
+- `GET /enduro/history?count=n` – return EnduroScore history ordered by newest first.
+- `GET /fitness` – compute the current FitnessScore and store it.
+- `GET /fitness/history?count=n` – return FitnessScore history ordered by newest first.
 - `GET /openapi.json` – machine-readable OpenAPI description of all endpoints.
 - `GET /stats?period=week&ids=1,2&types=Ride` – aggregated statistics grouped by day, week,
   month or year. Optional filters allow specifying a comma-separated list of activity
@@ -134,9 +157,11 @@ DATA_DIR/
     ftp.json
     weight.json
     wkg.json
+    enduro.json
+    fitness.json
 ```
 
-Metadata and streams are encoded with `serde_json` and compressed using zstd. The `ftp.json` file stores your Functional Threshold Power history used to compute IF and TSS. The `weight.json` file tracks weight changes and `wkg.json` stores watts per kilogram over time.
+Metadata and streams are encoded with `serde_json` and compressed using zstd. The `ftp.json` file stores Functional Threshold Power history used to compute IF and TSS. The `weight.json` file tracks weight changes, `wkg.json` records watts per kilogram and `enduro.json` and `fitness.json` keep the ride readiness scores over time.
 
 ## Adding Another User
 

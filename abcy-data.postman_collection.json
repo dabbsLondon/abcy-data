@@ -40,6 +40,10 @@
         "header": [ { "key": "Content-Type", "value": "application/json" } ],
         "body": { "mode": "raw", "raw": "{\n  \"object_type\": \"activity\", \n  \"aspect_type\": \"create\"\n}" }
       }
-    }
+    },
+    { "name": "Current EnduroScore", "request": { "method": "GET", "url": "{{base_url}}/enduro" } },
+    { "name": "EnduroScore History", "request": { "method": "GET", "url": "{{base_url}}/enduro/history?count=5" } },
+    { "name": "Current FitnessScore", "request": { "method": "GET", "url": "{{base_url}}/fitness" } },
+    { "name": "FitnessScore History", "request": { "method": "GET", "url": "{{base_url}}/fitness/history?count=5" } }
   ]
 }

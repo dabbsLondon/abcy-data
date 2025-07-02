@@ -39,6 +39,12 @@ pub struct WkgEntry {
     pub wkg: f64,
 }
 
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct ScoreEntry {
+    pub date: String,
+    pub score: f64,
+}
+
 #[derive(Clone)]
 pub struct Storage {
     base: PathBuf,
@@ -63,6 +69,14 @@ impl Storage {
 
     fn wkg_path(&self) -> PathBuf {
         self.base.join("wkg.json")
+    }
+
+    fn enduro_path(&self) -> PathBuf {
+        self.base.join("enduro.json")
+    }
+
+    fn fitness_path(&self) -> PathBuf {
+        self.base.join("fitness.json")
     }
 
     async fn load_ftp_history(&self) -> anyhow::Result<Vec<FtpEntry>> {
@@ -207,6 +221,122 @@ impl Storage {
         let mut hist = self.get_wkg_history().await?;
         hist.push(WkgEntry { date: Utc::now().date_naive().to_string(), wkg });
         self.save_wkg_history(&hist).await
+    }
+
+    async fn load_score_history(&self, path: &Path) -> anyhow::Result<Vec<ScoreEntry>> {
+        if let Ok(data) = fs::read(path).await {
+            Ok(serde_json::from_slice(&data)?)
+        } else {
+            Ok(Vec::new())
+        }
+    }
+
+    async fn save_score_history(&self, path: &Path, hist: &[ScoreEntry]) -> anyhow::Result<()> {
+        let data = serde_json::to_vec(hist)?;
+        if let Some(parent) = path.parent() {
+            fs::create_dir_all(parent).await?;
+        }
+        fs::write(path, data).await?;
+        Ok(())
+    }
+
+    async fn record_score(&self, path: &Path, score: f64) -> anyhow::Result<()> {
+        let mut hist = self.load_score_history(path).await?;
+        hist.push(ScoreEntry { date: Utc::now().date_naive().to_string(), score });
+        self.save_score_history(path, &hist).await
+    }
+
+    pub async fn enduro_history(&self, count: Option<usize>) -> anyhow::Result<Vec<ScoreEntry>> {
+        let mut hist = self.load_score_history(&self.enduro_path()).await?;
+        hist.reverse();
+        if let Some(n) = count { hist.truncate(n); }
+        Ok(hist)
+    }
+
+    pub async fn fitness_history(&self, count: Option<usize>) -> anyhow::Result<Vec<ScoreEntry>> {
+        let mut hist = self.load_score_history(&self.fitness_path()).await?;
+        hist.reverse();
+        if let Some(n) = count { hist.truncate(n); }
+        Ok(hist)
+    }
+
+    pub async fn current_enduro(&self) -> anyhow::Result<f64> {
+        Ok(self.load_score_history(&self.enduro_path()).await?.last().map(|e| e.score).unwrap_or(0.0))
+    }
+
+    pub async fn current_fitness(&self) -> anyhow::Result<f64> {
+        Ok(self.load_score_history(&self.fitness_path()).await?.last().map(|e| e.score).unwrap_or(0.0))
+    }
+
+    pub async fn update_enduro(&self) -> anyhow::Result<f64> {
+        let score = self.compute_enduro_score().await?;
+        self.record_score(&self.enduro_path(), score).await?;
+        Ok(score)
+    }
+
+    pub async fn update_fitness(&self) -> anyhow::Result<f64> {
+        let score = self.compute_fitness_score().await?;
+        self.record_score(&self.fitness_path(), score).await?;
+        Ok(score)
+    }
+
+    async fn compute_enduro_score(&self) -> anyhow::Result<f64> {
+        let acts = self.list_activities(None).await?;
+        let today = Utc::now().naive_utc().date();
+        let mut long_products = Vec::new();
+        let mut week_volume = 0f64;
+        let mut tss_sum = 0f64;
+        let mut last_long: Option<i64> = None;
+        for a in acts {
+            let dt = chrono::DateTime::parse_from_rfc3339(&a.start_date)?.naive_utc().date();
+            let days = (today - dt).num_days();
+            if days <= 28 {
+                let summary = self.load_activity_summary(a.id).await?;
+                if days < 7 {
+                    week_volume += summary.duration as f64 / 3600.0;
+                }
+                if let Some(tss) = summary.training_stress_score { tss_sum += tss; }
+                if summary.distance >= 80000.0 {
+                    long_products.push(summary.distance * summary.duration as f64);
+                    if last_long.map_or(true, |d| days < d) { last_long = Some(days); }
+                }
+            }
+        }
+        let avg_long = if !long_products.is_empty() {
+            long_products.iter().sum::<f64>() / long_products.len() as f64
+        } else { 0.0 };
+        let mut score = avg_long / 10000.0 + week_volume + tss_sum / 100.0;
+        if let Some(days) = last_long {
+            if days > 14 { score *= 0.9_f64.powf((days - 14) as f64); }
+        }
+        Ok(score)
+    }
+
+    async fn compute_fitness_score(&self) -> anyhow::Result<f64> {
+        use chrono::Duration;
+        let acts = self.list_activities(None).await?;
+        let today = Utc::now().naive_utc().date();
+        let mut week_hours = 0f64;
+        let mut tss_sum = 0f64;
+        let mut long_count = 0u32;
+        let mut dates = std::collections::HashSet::new();
+        for a in acts {
+            let dt = chrono::DateTime::parse_from_rfc3339(&a.start_date)?.naive_utc().date();
+            let days = (today - dt).num_days();
+            if days <= 28 {
+                let summary = self.load_activity_summary(a.id).await?;
+                if days < 7 { week_hours += summary.duration as f64 / 3600.0; }
+                if let Some(tss) = summary.training_stress_score { tss_sum += tss; }
+                if summary.distance >= 80000.0 { long_count += 1; }
+                dates.insert(dt);
+            }
+        }
+        let four_week_avg = (tss_sum / 4.0) / 10.0;
+        let mut score = week_hours * 4.0 + four_week_avg + long_count as f64;
+        let mut rest_days = 0i64;
+        for i in 0.. { let day = today - Duration::days(i); if dates.contains(&day) { break } else { rest_days += 1; } }
+        if rest_days > 3 { score *= 0.985_f64.powf((rest_days - 3) as f64); }
+        Ok(score)
     }
 
     pub async fn save(&self, meta: &serde_json::Value, streams: &serde_json::Value) -> anyhow::Result<()> {
