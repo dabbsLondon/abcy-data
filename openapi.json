@@ -85,6 +85,12 @@
         "responses": {"200": {"description": "Updated"}}
       }
     },
+    "/wkg": {"get": {"summary": "Current W/kg", "responses": {"200": {"description": "Current W/kg"}}}},
+    "/wkg/history": {"get": {"summary": "W/kg history", "responses": {"200": {"description": "History"}}}},
+    "/enduro": {"get": {"summary": "Current EnduroScore", "responses": {"200": {"description": "Enduro"}}}},
+    "/enduro/history": {"get": {"summary": "EnduroScore history", "responses": {"200": {"description": "History"}}}},
+    "/fitness": {"get": {"summary": "Current FitnessScore", "responses": {"200": {"description": "Fitness"}}}},
+    "/fitness/history": {"get": {"summary": "FitnessScore history", "responses": {"200": {"description": "History"}}}},
     "/stats": {
       "get": {
         "summary": "Aggregated statistics",
