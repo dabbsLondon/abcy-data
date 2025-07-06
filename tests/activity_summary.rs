@@ -31,7 +31,7 @@ async fn summary_computation() {
     let summary = storage.load_activity_summary(1).await.unwrap();
     assert_eq!(summary.id, 1);
     assert_eq!(summary.duration, 30);
-    assert!(summary.average_power.unwrap() > 0.0);
+    assert!(summary.weighted_average_power.unwrap() > 0.0);
     assert!(summary.average_speed.unwrap() > 0.0);
     assert_eq!(summary.pr_count, Some(2));
     assert!(summary.average_heartrate.unwrap() > 0.0);

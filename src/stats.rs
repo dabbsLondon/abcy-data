@@ -80,7 +80,7 @@ impl Storage {
             let entry = map.entry(key).or_default();
             entry.count += 1;
             entry.distance += summary.distance;
-            if let Some(wp) = summary.average_power {
+            if let Some(wp) = summary.weighted_average_power {
                 entry.wp_sum += wp;
                 entry.wp_count += 1;
             }

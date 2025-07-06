@@ -10,14 +10,14 @@ fn make_storage() -> Storage {
 }
 
 #[tokio::test]
-async fn dragonride_average_power() {
+async fn dragonride_weighted_average_power() {
     let storage = make_storage();
     let data: Value = serde_json::from_str(&fs::read_to_string("dragonride.json").unwrap()).unwrap();
     let meta = &data["meta"];
     let streams = &data["streams"];
     storage.save(meta, streams).await.unwrap();
     let summary = storage.load_activity_summary(meta["id"].as_u64().unwrap()).await.unwrap();
-    assert_eq!(summary.average_power.unwrap().round() as i64, 160);
+    assert_eq!(summary.weighted_average_power.unwrap().round() as i64, 160);
     let np = summary.normalized_power.unwrap();
     let ifv = summary.intensity_factor.unwrap();
     let tss = summary.training_stress_score.unwrap();

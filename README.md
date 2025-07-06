@@ -105,7 +105,7 @@ Scores roughly range as follows:
 
 - `GET /activities?count=n` – list activities ordered by newest first. If `count` is omitted all headers are returned.
 - `GET /activity/{id}` – full metadata and streams (time and power) for an activity.
-- `GET /activity/{id}/summary` – small summary with duration, power and training metrics.
+- `GET /activity/{id}/summary` – small summary including duration, weighted average power, average speed, intensity factor, training stress score and average heart rate.
 - `GET /files` – recursive listing of everything under `DATA_DIR`.
 - `GET /raw/{path}` – return a stored file by relative path.
 - `GET /ftp` – return the current FTP value.
