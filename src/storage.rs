@@ -556,19 +556,33 @@ impl Storage {
 
     pub async fn recent_trends(&self) -> anyhow::Result<TrendSummary> {
         let acts = self.list_activities(None).await?;
+        let today = Utc::now().naive_utc().date();
         let mut recent = Vec::new();
         let mut prev = Vec::new();
-        for (i, a) in acts.iter().enumerate() {
-            if i >= 20 { break; }
-            let summary = self.load_activity_summary(a.id).await?;
-            let entry = (
-                summary.average_speed,
-                summary.max_speed,
-                summary.training_stress_score,
-                summary.intensity_factor,
-                summary.weighted_average_power,
-            );
-            if i < 10 { recent.push(entry); } else { prev.push(entry); }
+        for a in acts {
+            let dt = chrono::DateTime::parse_from_rfc3339(&a.start_date)?.naive_utc().date();
+            let days = (today - dt).num_days();
+            if days <= 90 {
+                let summary = self.load_activity_summary(a.id).await?;
+                recent.push((
+                    summary.average_speed,
+                    summary.max_speed,
+                    summary.training_stress_score,
+                    summary.intensity_factor,
+                    summary.weighted_average_power,
+                ));
+            } else if days <= 180 {
+                let summary = self.load_activity_summary(a.id).await?;
+                prev.push((
+                    summary.average_speed,
+                    summary.max_speed,
+                    summary.training_stress_score,
+                    summary.intensity_factor,
+                    summary.weighted_average_power,
+                ));
+            } else {
+                break;
+            }
         }
 
         fn avg(vals: impl Iterator<Item = Option<f64>>) -> f64 {
@@ -579,13 +593,13 @@ impl Storage {
         }
 
         fn classify(r: f64, p: f64) -> String {
-            if p == 0.0 { return "normal".into(); }
+            if p == 0.0 { return "same".into(); }
             let ratio = r / p;
-            if ratio >= 1.10 { "very_high".into() }
-            else if ratio >= 1.03 { "high".into() }
-            else if ratio <= 0.90 { "very_low".into() }
-            else if ratio <= 0.97 { "low".into() }
-            else { "normal".into() }
+            if ratio >= 1.20 { "very_high".into() }
+            else if ratio >= 1.05 { "high".into() }
+            else if ratio <= 0.80 { "very_low".into() }
+            else if ratio <= 0.95 { "low".into() }
+            else { "same".into() }
         }
 
         let recent_avg_speed = avg(recent.iter().map(|t| t.0));

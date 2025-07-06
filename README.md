@@ -120,7 +120,7 @@ Scores roughly range as follows:
 - `GET /enduro/history?count=n` – return EnduroScore history ordered by newest first.
 - `GET /fitness` – compute the current FitnessScore and store it.
 - `GET /fitness/history?count=n` – return FitnessScore history ordered by newest first.
-- `GET /trend` – return performance trends comparing the last ten rides to the previous ten. This is the same data available in the `trend` field of activity summaries.
+- `GET /trend` – return performance trends comparing the last three months of rides to the prior three months. This is the same data available in the `trend` field of activity summaries.
 - `GET /openapi.json` – machine-readable OpenAPI description of all endpoints.
 - `GET /stats?period=week&ids=1,2&types=Ride` – aggregated statistics grouped by day, week,
   month or year. Optional filters allow specifying a comma-separated list of activity
