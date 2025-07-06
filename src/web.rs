@@ -34,7 +34,12 @@ async fn activity(id: web::Path<u64>, storage: web::Data<Storage>) -> impl Respo
 #[get("/activity/{id}/summary")]
 async fn activity_summary(id: web::Path<u64>, storage: web::Data<Storage>) -> impl Responder {
     match storage.load_activity_summary(*id).await {
-        Ok(s) => HttpResponse::Ok().json(s),
+        Ok(mut s) => {
+            if let Ok(t) = storage.recent_trends().await {
+                s.trend = Some(t);
+            }
+            HttpResponse::Ok().json(s)
+        }
         Err(_) => HttpResponse::NotFound().finish(),
     }
 }
@@ -169,6 +174,14 @@ async fn fitness_history(params: web::Query<ScoreHistoryParams>, storage: web::D
     }
 }
 
+#[get("/trend")]
+async fn trend_get(storage: web::Data<Storage>) -> impl Responder {
+    match storage.recent_trends().await {
+        Ok(t) => HttpResponse::Ok().json(t),
+        Err(_) => HttpResponse::InternalServerError().finish(),
+    }
+}
+
 #[derive(serde::Deserialize)]
 struct StatsParams {
     period: String,
@@ -242,6 +255,7 @@ pub async fn run(_config: Config, auth: Auth, storage: Storage) -> std::io::Resu
             .service(enduro_history)
             .service(fitness_get)
             .service(fitness_history)
+            .service(trend_get)
             .service(openapi_spec)
             .service(stats_get)
             .service(webhook)

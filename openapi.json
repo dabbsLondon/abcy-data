@@ -64,13 +64,24 @@
                     "duration": {"type": "integer"},
                     "weighted_average_power": {"type": "number"},
                     "average_speed": {"type": "number"},
+                    "max_speed": {"type": "number"},
                     "pr_count": {"type": "integer"},
                     "average_heartrate": {"type": "number"},
                     "summary_polyline": {"type": "string"},
                     "normalized_power": {"type": "number"},
                     "intensity_factor": {"type": "number"},
                     "training_stress_score": {"type": "number"},
-                    "activity_type": {"type": "string"}
+                    "activity_type": {"type": "string"},
+                    "trend": {
+                      "type": "object",
+                      "properties": {
+                        "avg_speed": {"type": "string"},
+                        "max_speed": {"type": "string"},
+                        "tss": {"type": "string"},
+                        "intensity": {"type": "string"},
+                        "power": {"type": "string"}
+                      }
+                    }
                   }
                 }
               }
@@ -116,6 +127,7 @@
     "/enduro/history": {"get": {"summary": "EnduroScore history", "responses": {"200": {"description": "History"}}}},
     "/fitness": {"get": {"summary": "Current FitnessScore", "responses": {"200": {"description": "Fitness"}}}},
     "/fitness/history": {"get": {"summary": "FitnessScore history", "responses": {"200": {"description": "History"}}}},
+    "/trend": {"get": {"summary": "Recent trends", "responses": {"200": {"description": "Trends"}}}},
     "/stats": {
       "get": {
         "summary": "Aggregated statistics",

@@ -25,6 +25,8 @@ pub struct ActivitySummary {
     pub weighted_average_power: Option<f64>,
     /// Average speed in meters per second if available
     pub average_speed: Option<f64>,
+    /// Maximum speed in meters per second if available
+    pub max_speed: Option<f64>,
     /// Number of personal records from segments if available
     pub pr_count: Option<i64>,
     /// Average heart rate in bpm if available
@@ -39,6 +41,17 @@ pub struct ActivitySummary {
     pub training_stress_score: Option<f64>,
     /// Activity type such as Ride or Run if available
     pub activity_type: Option<String>,
+    /// Performance trend classification comparing recent rides
+    pub trend: Option<TrendSummary>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct TrendSummary {
+    pub avg_speed: String,
+    pub max_speed: String,
+    pub tss: String,
+    pub intensity: String,
+    pub power: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
