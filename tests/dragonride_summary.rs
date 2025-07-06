@@ -24,4 +24,5 @@ async fn dragonride_weighted_average_power() {
     assert!((np - 170.09).abs() < 0.1);
     assert!((ifv - 0.7087).abs() < 0.001);
     assert!((tss - 443.18).abs() < 1.0);
+    assert_eq!(summary.total_elevation_gain, Some(2183.0));
 }

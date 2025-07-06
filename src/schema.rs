@@ -20,6 +20,8 @@ pub struct ActivitySummary {
     pub name: String,
     pub start_date: String,
     pub distance: f64,
+    /// Total elevation gain in meters if available
+    pub total_elevation_gain: Option<f64>,
     pub duration: i64,
     /// Weighted average power in watts if available
     pub weighted_average_power: Option<f64>,

@@ -16,6 +16,7 @@ async fn summary_computation() {
         "name":"ride",
         "start_date":"2024-01-01",
         "distance":1.0,
+        "total_elevation_gain":10.0,
         "elapsed_time":30,
         "average_speed":0.033,
         "pr_count":2,
@@ -36,4 +37,5 @@ async fn summary_computation() {
     assert_eq!(summary.pr_count, Some(2));
     assert!(summary.average_heartrate.unwrap() > 0.0);
     assert_eq!(summary.summary_polyline, Some("xyz".into()));
+    assert_eq!(summary.total_elevation_gain, Some(10.0));
 }
