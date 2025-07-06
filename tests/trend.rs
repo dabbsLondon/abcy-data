@@ -8,8 +8,9 @@ fn make_storage() -> Storage {
     Storage::new(&cfg)
 }
 
-async fn add_activity(storage: &Storage, id: u64, day: u64, avg_speed: f64, max_speed: f64, tss: f64, intensity: f64, power: f64) {
-    let date = format!("2024-01-{:02}T00:00:00Z", day);
+async fn add_activity(storage: &Storage, id: u64, days_ago: i64, avg_speed: f64, max_speed: f64, tss: f64, intensity: f64, power: f64) {
+    let dt = chrono::Utc::now().naive_utc().date() - chrono::Duration::days(days_ago);
+    let date = dt.and_hms_opt(0, 0, 0).unwrap().format("%Y-%m-%dT%H:%M:%SZ").to_string();
     let meta = json!({
         "id": id,
         "name": "ride",
@@ -30,16 +31,16 @@ async fn add_activity(storage: &Storage, id: u64, day: u64, avg_speed: f64, max_
 async fn trend_computation() {
     let storage = make_storage();
     for i in 0..10 {
-        add_activity(&storage, i as u64, i as u64 + 1, 10.0, 20.0, 100.0, 0.95, 200.0).await;
+        add_activity(&storage, 20 + i as u64, 10 - i as i64, 11.0, 20.0, 105.0, 1.0, 230.0).await;
     }
-    for i in 10..20 {
-        add_activity(&storage, i as u64, i as u64 + 1, 11.0, 20.0, 105.0, 1.0, 230.0).await;
+    for i in 0..10 {
+        add_activity(&storage, i as u64, 100 + i as i64, 10.0, 20.0, 100.0, 0.95, 200.0).await;
     }
 
     let trend = storage.recent_trends().await.unwrap();
-    assert_eq!(trend.avg_speed, "very_high");
-    assert_eq!(trend.max_speed, "normal");
+    assert_eq!(trend.avg_speed, "high");
+    assert_eq!(trend.max_speed, "same");
     assert_eq!(trend.tss, "high");
     assert_eq!(trend.intensity, "high");
-    assert_eq!(trend.power, "very_high");
+    assert_eq!(trend.power, "high");
 }
