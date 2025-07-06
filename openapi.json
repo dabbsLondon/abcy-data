@@ -50,7 +50,32 @@
           }
         ],
         "responses": {
-          "200": {"description": "Summary data"},
+          "200": {
+            "description": "Summary data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {"type": "integer"},
+                    "name": {"type": "string"},
+                    "start_date": {"type": "string"},
+                    "distance": {"type": "number"},
+                    "duration": {"type": "integer"},
+                    "weighted_average_power": {"type": "number"},
+                    "average_speed": {"type": "number"},
+                    "pr_count": {"type": "integer"},
+                    "average_heartrate": {"type": "number"},
+                    "summary_polyline": {"type": "string"},
+                    "normalized_power": {"type": "number"},
+                    "intensity_factor": {"type": "number"},
+                    "training_stress_score": {"type": "number"},
+                    "activity_type": {"type": "string"}
+                  }
+                }
+              }
+            }
+          },
           "404": {"description": "Not found"}
         }
       }

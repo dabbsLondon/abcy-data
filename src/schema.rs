@@ -21,7 +21,8 @@ pub struct ActivitySummary {
     pub start_date: String,
     pub distance: f64,
     pub duration: i64,
-    pub average_power: Option<f64>,
+    /// Weighted average power in watts if available
+    pub weighted_average_power: Option<f64>,
     /// Average speed in meters per second if available
     pub average_speed: Option<f64>,
     /// Number of personal records from segments if available

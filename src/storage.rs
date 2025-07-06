@@ -435,7 +435,7 @@ impl Storage {
             .and_then(|v| v.as_i64())
             .or_else(|| detail.streams.time.last().cloned())
             .unwrap_or(0);
-        let average_power = detail
+        let weighted_average_power = detail
             .meta
             .get("weighted_average_watts")
             .and_then(|v| v.as_f64())
@@ -516,7 +516,7 @@ impl Storage {
                 .to_string(),
             distance: detail.meta.get("distance").and_then(|v| v.as_f64()).unwrap_or(0.0),
             duration,
-            average_power,
+            weighted_average_power,
             average_speed,
             pr_count,
             average_heartrate,
