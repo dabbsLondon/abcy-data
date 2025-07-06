@@ -446,6 +446,10 @@ impl Storage {
                 None
             });
         let distance = detail.meta.get("distance").and_then(|v| v.as_f64()).unwrap_or(0.0);
+        let total_elevation_gain = detail
+            .meta
+            .get("total_elevation_gain")
+            .and_then(|v| v.as_f64());
         let average_speed = detail
             .meta
             .get("average_speed")
@@ -520,6 +524,7 @@ impl Storage {
                 .unwrap_or("")
                 .to_string(),
             distance: detail.meta.get("distance").and_then(|v| v.as_f64()).unwrap_or(0.0),
+            total_elevation_gain,
             duration,
             weighted_average_power,
             average_speed,

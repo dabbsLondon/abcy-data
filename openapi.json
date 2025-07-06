@@ -61,6 +61,7 @@
                     "name": {"type": "string"},
                     "start_date": {"type": "string"},
                     "distance": {"type": "number"},
+                    "total_elevation_gain": {"type": "number"},
                     "duration": {"type": "integer"},
                     "weighted_average_power": {"type": "number"},
                     "average_speed": {"type": "number"},
