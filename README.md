@@ -105,7 +105,7 @@ Scores roughly range as follows:
 
 - `GET /activities?count=n` – list activities ordered by newest first. If `count` is omitted all headers are returned.
 - `GET /activity/{id}` – full metadata and streams (time and power) for an activity.
-- `GET /activity/{id}/summary` – small summary including duration, weighted average power, average speed, intensity factor, training stress score and average heart rate.
+- `GET /activity/{id}/summary` – small summary including duration, weighted average power, average speed, intensity factor, training stress score and average heart rate. The response includes a `trend` section comparing recent rides.
 - `GET /files` – recursive listing of everything under `DATA_DIR`.
 - `GET /raw/{path}` – return a stored file by relative path.
 - `GET /ftp` – return the current FTP value.
@@ -120,6 +120,7 @@ Scores roughly range as follows:
 - `GET /enduro/history?count=n` – return EnduroScore history ordered by newest first.
 - `GET /fitness` – compute the current FitnessScore and store it.
 - `GET /fitness/history?count=n` – return FitnessScore history ordered by newest first.
+- `GET /trend` – return performance trends comparing the last ten rides to the previous ten. This is the same data available in the `trend` field of activity summaries.
 - `GET /openapi.json` – machine-readable OpenAPI description of all endpoints.
 - `GET /stats?period=week&ids=1,2&types=Ride` – aggregated statistics grouped by day, week,
   month or year. Optional filters allow specifying a comma-separated list of activity

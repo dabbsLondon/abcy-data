@@ -1,4 +1,4 @@
-use crate::schema::{ActivityHeader, ActivityDetail, ParsedStreams};
+use crate::schema::{ActivityHeader, ActivityDetail, ParsedStreams, TrendSummary};
 use crate::utils::Storage as StorageCfg;
 use chrono::Utc;
 use std::path::{Path, PathBuf};
@@ -452,6 +452,11 @@ impl Storage {
             .and_then(|v| v.as_f64())
             .or_else(|| if duration > 0 { Some(distance / duration as f64) } else { None })
             .map(|mps| mps * 3.6);
+        let max_speed = detail
+            .meta
+            .get("max_speed")
+            .and_then(|v| v.as_f64())
+            .map(|mps| mps * 3.6);
         let pr_count = if let Some(efforts) = detail
             .meta
             .get("segment_efforts")
@@ -518,6 +523,7 @@ impl Storage {
             duration,
             weighted_average_power,
             average_speed,
+            max_speed,
             pr_count,
             average_heartrate,
             summary_polyline,
@@ -525,6 +531,7 @@ impl Storage {
             intensity_factor,
             training_stress_score,
             activity_type,
+            trend: None,
         })
     }
 
@@ -545,6 +552,60 @@ impl Storage {
             }
         }
         Ok(())
+    }
+
+    pub async fn recent_trends(&self) -> anyhow::Result<TrendSummary> {
+        let acts = self.list_activities(None).await?;
+        let mut recent = Vec::new();
+        let mut prev = Vec::new();
+        for (i, a) in acts.iter().enumerate() {
+            if i >= 20 { break; }
+            let summary = self.load_activity_summary(a.id).await?;
+            let entry = (
+                summary.average_speed,
+                summary.max_speed,
+                summary.training_stress_score,
+                summary.intensity_factor,
+                summary.weighted_average_power,
+            );
+            if i < 10 { recent.push(entry); } else { prev.push(entry); }
+        }
+
+        fn avg(vals: impl Iterator<Item = Option<f64>>) -> f64 {
+            let mut sum = 0.0;
+            let mut count = 0.0;
+            for v in vals { if let Some(x) = v { sum += x; count += 1.0; } }
+            if count > 0.0 { sum / count } else { 0.0 }
+        }
+
+        fn classify(r: f64, p: f64) -> String {
+            if p == 0.0 { return "normal".into(); }
+            let ratio = r / p;
+            if ratio >= 1.10 { "very_high".into() }
+            else if ratio >= 1.03 { "high".into() }
+            else if ratio <= 0.90 { "very_low".into() }
+            else if ratio <= 0.97 { "low".into() }
+            else { "normal".into() }
+        }
+
+        let recent_avg_speed = avg(recent.iter().map(|t| t.0));
+        let prev_avg_speed = avg(prev.iter().map(|t| t.0));
+        let recent_max_speed = avg(recent.iter().map(|t| t.1));
+        let prev_max_speed = avg(prev.iter().map(|t| t.1));
+        let recent_tss = avg(recent.iter().map(|t| t.2));
+        let prev_tss = avg(prev.iter().map(|t| t.2));
+        let recent_int = avg(recent.iter().map(|t| t.3));
+        let prev_int = avg(prev.iter().map(|t| t.3));
+        let recent_power = avg(recent.iter().map(|t| t.4));
+        let prev_power = avg(prev.iter().map(|t| t.4));
+
+        Ok(TrendSummary {
+            avg_speed: classify(recent_avg_speed, prev_avg_speed),
+            max_speed: classify(recent_max_speed, prev_max_speed),
+            tss: classify(recent_tss, prev_tss),
+            intensity: classify(recent_int, prev_int),
+            power: classify(recent_power, prev_power),
+        })
     }
 
     pub async fn read_file(&self, path: &str) -> anyhow::Result<Vec<u8>> {
