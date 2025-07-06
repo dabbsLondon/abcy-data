@@ -297,7 +297,8 @@ impl Storage {
                 }
                 if let Some(tss) = summary.training_stress_score { tss_sum += tss; }
                 if summary.distance >= 80000.0 {
-                    long_products.push(summary.distance * summary.duration as f64);
+                    let km_hours = (summary.distance / 1000.0) * (summary.duration as f64 / 3600.0);
+                    long_products.push(km_hours);
                     if last_long.map_or(true, |d| days < d) { last_long = Some(days); }
                 }
             }
@@ -305,7 +306,7 @@ impl Storage {
         let avg_long = if !long_products.is_empty() {
             long_products.iter().sum::<f64>() / long_products.len() as f64
         } else { 0.0 };
-        let mut score = avg_long / 10000.0 + week_volume + tss_sum / 100.0;
+        let mut score = avg_long / 20.0 + week_volume + tss_sum / 100.0;
         if let Some(days) = last_long {
             if days > 14 { score *= 0.9_f64.powf((days - 14) as f64); }
         }

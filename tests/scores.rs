@@ -31,8 +31,9 @@ async fn enduro_score_computation() {
     add_activity(&storage, 3, 3, 50000.0, 7200, 100.0).await;
 
     let score = storage.update_enduro().await.unwrap();
-    let avg_long = (100000.0 * 14400.0 + 100000.0 * 10800.0) / 2.0;
-    let expected = avg_long / 10000.0 + 6.0 + 4.8;
+    let avg_long = (100000.0 / 1000.0 * (14400.0 / 3600.0)
+        + 100000.0 / 1000.0 * (10800.0 / 3600.0)) / 2.0;
+    let expected = avg_long / 20.0 + 6.0 + 4.8;
     assert!((score - expected).abs() < 1e-6);
     let hist = storage.enduro_history(None).await.unwrap();
     assert_eq!(hist.len(), 1);
@@ -46,7 +47,7 @@ async fn enduro_score_decay() {
     add_activity(&storage, 2, 1, 50000.0, 7200, 100.0).await;
 
     let score = storage.update_enduro().await.unwrap();
-    let base = 144000.0 + 2.0 + 3.0;
+    let base = (100000.0 / 1000.0 * (14400.0 / 3600.0)) / 20.0 + 2.0 + 3.0;
     let expected = base * 0.9_f64.powf(6.0);
     assert!((score - expected).abs() < 1e-6);
 }
