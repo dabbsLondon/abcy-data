@@ -3,6 +3,8 @@ name: Docker Build
 on:
   push:
     branches: ["main"]
+  pull_request:
+    branches: ["**"]
 
 jobs:
   build:
@@ -16,3 +18,34 @@ jobs:
         with:
           context: .
           push: false
+
+  ray-cluster:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: arm64,amd64
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Log in to GHCR
+        if: github.event_name == 'push'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build and (conditionally) push Ray cluster image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: docker/ray-cluster/Dockerfile
+          push: ${{ github.event_name == 'push' }}
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/ray-cluster:2.7.0
+            ghcr.io/${{ github.repository_owner }}/ray-cluster:latest
+          platforms: linux/amd64,linux/arm64
