@@ -1,14 +1,21 @@
-FROM rayproject/ray:2.7.0-py310
+FROM rayproject/ray:2.7.0-py312
 
 ENV DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         build-essential \
-        python3-dev \
+        python3.12-dev \
         unixodbc-dev \
         freetds-dev \
     && rm -rf /var/lib/apt/lists/*
+
+RUN python - <<'PY'
+import sys
+
+assert sys.version_info[:2] == (3, 12), f"Expected Python 3.12, got {sys.version}"
+print(f"Python version OK: {sys.version}")
+PY
 
 RUN pip install --no-cache-dir \
     connectorx>=0.3.2 \
