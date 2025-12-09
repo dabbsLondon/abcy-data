@@ -120,6 +120,23 @@ docker build -t abcy-data .
 
 The container expects the environment variables described above at runtime.
 
+### Ray 2.7 cluster image
+
+A dedicated Ray worker image is available for Graviton/arm64 environments. The
+Dockerfile at `docker/ray-cluster/Dockerfile` starts from
+`rayproject/ray:2.7.0-py310`, installs ConnectorX plus MSSQL database drivers,
+and verifies ConnectorX by running a SQLite round trip during the build. Build
+it locally for arm64 with:
+
+```bash
+docker build -f docker/ray-cluster/Dockerfile -t ghcr.io/<owner>/ray-cluster:local --platform linux/arm64 .
+```
+
+GitHub Actions builds multi-architecture images tagged
+`ray-cluster:2.7.0` and `ray-cluster:latest`, using a lower‑cased owner value to
+produce valid GHCR tags. The workflow is configured to build only and does not
+push the image automatically.
+
 ### Continuous Integration
 
 GitHub Actions run `cargo test` for each pull request and build the Docker image on every push to `main`.
