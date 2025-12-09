@@ -132,8 +132,10 @@ it locally for arm64 with:
 docker build -f docker/ray-cluster/Dockerfile -t ghcr.io/<owner>/ray-cluster:local --platform linux/arm64 .
 ```
 
-GitHub Actions publishes multi-architecture images to GHCR with the tags
-`ray-cluster:2.7.0` and `ray-cluster:latest`.
+GitHub Actions builds multi-architecture images tagged
+`ray-cluster:2.7.0` and `ray-cluster:latest`, using a lower‑cased owner value to
+produce valid GHCR tags. The workflow is configured to build only and does not
+push the image automatically.
 
 ### Continuous Integration
 
